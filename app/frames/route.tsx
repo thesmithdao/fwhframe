@@ -79,16 +79,10 @@ const handleRequest = frames(async (ctx) => {
     .select("created_at", { count: "exact" })
     .eq("fid", message?.requesterFid)
     .limit(1)
+  const lastInteractionTime = checkInteractionTime(data)
 
-  let teste: any
-  // If didn't find claims, send crypto and add claim log
-  if (!data || !data.length) {
-    teste = await supabase.from("users").insert({
-      fid: message?.requesterFid,
-      f_address: message?.requesterCustodyAddress,
-      eth_address: message?.requesterVerifiedAddresses[0],
-    })
-
+  // If find claims or has not passed 24 hours since last claim
+  if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     return {
       image: (
         <div
@@ -98,38 +92,29 @@ const handleRequest = frames(async (ctx) => {
             alignItems: "center",
           }}
         >
-          ** coins **
+          <span>GM, {message.requesterUserData?.displayName}!</span>
+          <span>wait {lastInteractionTime.formattedTime}</span>
         </div>
       ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
     }
   }
 
-  const lastInteractionTime = checkInteractionTime(data[0].created_at)
-  // If has passed 24 hours since last claim, send crypto and add claim log
-  if (lastInteractionTime.has24HoursPassed) {
-    teste = await supabase.from("users").insert({
-      fid: message?.requesterFid,
-      f_address: message?.requesterCustodyAddress,
-      eth_address: message?.requesterVerifiedAddresses[0],
-    })
-    return {
-      image: (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          ** coins **
-        </div>
-      ),
-    }
-  }
+  // @todo send crypto
 
-  // Default
+  // Save claim history
+  const teste = await supabase.from("users").insert({
+    fid: message?.requesterFid,
+    f_address: message?.requesterCustodyAddress,
+    eth_address: message?.requesterVerifiedAddresses[0],
+  })
+
   return {
-    image: message ? (
+    image: (
       <div
         style={{
           display: "flex",
@@ -137,30 +122,9 @@ const handleRequest = frames(async (ctx) => {
           alignItems: "center",
         }}
       >
-        <span>GM, {message.requesterUserData?.displayName}!</span>
-        <span>wait {lastInteractionTime.formattedTime}</span>
-      </div>
-    ) : (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        Get your coins!
-        <span style={{ fontSize: "24px" }}>
-          You have to like and recast the cast, and follow the caster first
-        </span>
+        ** crypto **
       </div>
     ),
-    buttons: !ctx.url.searchParams.has("state")
-      ? [
-          <Button action="post" target={{ query: { state: true } }}>
-            GET
-          </Button>,
-        ]
-      : [],
   }
 })
 
