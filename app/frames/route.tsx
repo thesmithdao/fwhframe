@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
-import { client } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
 
@@ -19,9 +18,10 @@ const frames = createFrames({
 })
 
 const handleRequest = frames(async (ctx) => {
-  const walletAddress = client.account.address
+  const message = ctx.message
 
-  if (!ctx.message)
+  // If no message, show home page
+  if (!message)
     return {
       image: (
         <div
@@ -44,7 +44,12 @@ const handleRequest = frames(async (ctx) => {
       ],
     }
 
-  if (!ctx.message.likedCast || !ctx.message.recastedCast) {
+  // If user didn't complete the requirements, show to do list
+  if (
+    !message.likedCast ||
+    !message.recastedCast ||
+    !message.requesterFollowsCaster
+  ) {
     return {
       image: (
         <div
@@ -54,39 +59,36 @@ const handleRequest = frames(async (ctx) => {
             alignItems: "center",
           }}
         >
-          <span>You have to like the cast and follow the caster first</span>
+          <span>@todo list</span>
+          <span>[ {message.likedCast ? "x" : " "} ] Like</span>
+          <span>[ {message.recastedCast ? "x" : " "} ] Recast</span>
+          <span>[ {message.requesterFollowsCaster ? "x" : " "} ] Follow</span>
         </div>
       ),
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          GET
+          Try again
         </Button>,
       ],
     }
   }
 
-  console.log({
-    fid: ctx.message?.requesterFid,
-    f_address: ctx.message?.requesterCustodyAddress,
-    eth_address: ctx.message?.requesterVerifiedAddresses[0],
-  })
-
+  // Find user last claim
   const { data, error } = await supabase
     .from("users")
     .select("created_at", { count: "exact" })
-    .eq("fid", ctx.message?.requesterFid)
+    .eq("fid", message?.requesterFid)
     .limit(1)
-  console.log({ data, error })
 
   let teste: any
+  // If didn't find claims, send crypto and add claim log
   if (!data || !data.length) {
     teste = await supabase.from("users").insert({
-      fid: ctx.message?.requesterFid,
-      f_address: ctx.message?.requesterCustodyAddress,
-      eth_address: ctx.message?.requesterVerifiedAddresses[0],
+      fid: message?.requesterFid,
+      f_address: message?.requesterCustodyAddress,
+      eth_address: message?.requesterVerifiedAddresses[0],
     })
 
-    console.log({ teste })
     return {
       image: (
         <div
@@ -103,7 +105,13 @@ const handleRequest = frames(async (ctx) => {
   }
 
   const lastInteractionTime = checkInteractionTime(data[0].created_at)
+  // If has passed 24 hours since last claim, send crypto and add claim log
   if (lastInteractionTime.has24HoursPassed) {
+    teste = await supabase.from("users").insert({
+      fid: message?.requesterFid,
+      f_address: message?.requesterCustodyAddress,
+      eth_address: message?.requesterVerifiedAddresses[0],
+    })
     return {
       image: (
         <div
@@ -119,8 +127,9 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
+  // Default
   return {
-    image: ctx.message ? (
+    image: message ? (
       <div
         style={{
           display: "flex",
@@ -128,7 +137,7 @@ const handleRequest = frames(async (ctx) => {
           alignItems: "center",
         }}
       >
-        <span>GM, {ctx.message.requesterUserData?.displayName}!</span>
+        <span>GM, {message.requesterUserData?.displayName}!</span>
         <span>wait {lastInteractionTime.formattedTime}</span>
       </div>
     ) : (
@@ -141,7 +150,7 @@ const handleRequest = frames(async (ctx) => {
       >
         Get your coins!
         <span style={{ fontSize: "24px" }}>
-          You have to like the cast and follow the caster first
+          You have to like and recast the cast, and follow the caster first
         </span>
       </div>
     ),
