@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
-import { publicClient, walletClient } from "@/lib/web3-client"
+import { chain, publicClient, walletClient } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
-import { formatEther } from "viem"
+import { formatEther, parseEther } from "viem"
 
 const frames = createFrames({
   basePath: "/frames",
@@ -39,7 +39,7 @@ const handleRequest = frames(async (ctx) => {
             alignItems: "center",
           }}
         >
-          Get your coins!
+          Claim your coins!
           <span style={{ fontSize: "24px" }}>
             You have to like the cast and follow the caster first
           </span>
@@ -50,7 +50,7 @@ const handleRequest = frames(async (ctx) => {
       ),
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          GET
+          Claim
         </Button>,
       ],
     }
@@ -74,6 +74,27 @@ const handleRequest = frames(async (ctx) => {
           <span>[ {message.likedCast ? "x" : " "} ] Like</span>
           <span>[ {message.recastedCast ? "x" : " "} ] Recast</span>
           <span>[ {message.requesterFollowsCaster ? "x" : " "} ] Follow</span>
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    }
+  }
+
+  if (!message.requesterVerifiedAddresses.length) {
+    return {
+      image: (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          You don't have a Verified Address added to Farcaster
         </div>
       ),
       buttons: [
@@ -115,10 +136,14 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // @todo send crypto
+  // send transaction
+  await walletClient.sendTransaction({
+    to: message.requesterVerifiedAddresses[0] as `0x${string}`,
+    value: parseEther("0.000333"),
+  })
 
   // Save claim history
-  const teste = await supabase.from("users").insert({
+  await supabase.from("users").insert({
     fid: message?.requesterFid,
     f_address: message?.requesterCustodyAddress,
     eth_address: message?.requesterVerifiedAddresses[0],
@@ -133,7 +158,7 @@ const handleRequest = frames(async (ctx) => {
           alignItems: "center",
         }}
       >
-        ** crypto **
+        ** you received 0.000333 eth on {chain.name} **
       </div>
     ),
   }
