@@ -1,7 +1,9 @@
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
+import { publicClient, walletClient } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
+import { formatEther } from "viem"
 
 const frames = createFrames({
   basePath: "/frames",
@@ -19,6 +21,12 @@ const frames = createFrames({
 
 const handleRequest = frames(async (ctx) => {
   const message = ctx.message
+  const wallet = walletClient.account.address
+
+  const balance = await publicClient.getBalance({
+    address: wallet,
+  })
+  const balanceAsEther = formatEther(balance)
 
   // If no message, show home page
   if (!message)
@@ -34,6 +42,9 @@ const handleRequest = frames(async (ctx) => {
           Get your coins!
           <span style={{ fontSize: "24px" }}>
             You have to like the cast and follow the caster first
+          </span>
+          <span style={{ marginTop: "32px", fontSize: "24px" }}>
+            Faucet balance: {balanceAsEther}
           </span>
         </div>
       ),
