@@ -1,4 +1,4 @@
-import { publicClient } from "@/lib/web3-client"
+import { client } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
 
@@ -17,7 +17,7 @@ const frames = createFrames({
 })
 
 const handleRequest = frames(async (ctx) => {
-  const blockNumber = await publicClient.getBlockNumber()
+  const walletAddress = client.account.address
 
   return {
     image: ctx.message ? (
@@ -31,22 +31,24 @@ const handleRequest = frames(async (ctx) => {
         <span>GM, {ctx.message.requesterUserData?.displayName}!</span><br/>
         <span>Your FID is {ctx.message.requesterFid}</span><br/>
         <span>LET'S HACK THE PLAN3T</span><br/>
-        <span>You're on ETH {" " + blockNumber}'st block</span>
+        <span>{walletAddress}</span>
       </div>
     ) : (
       <div
         style={{
           display: "flex",
           flexDirection: "column",
+          alignItems: "center"
         }}
       >
-        Say GM
+        Get your coins!
+        <span style={{fontSize: "24px"}}>You have to like first</span>
       </div>
     ),
     buttons: !ctx.url.searchParams.has("state")
       ? [
           <Button action="post" target={{ query: { state: true } }}>
-            Say GM
+            GET
           </Button>,
         ]
       : [],
