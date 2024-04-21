@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { Share_Tech_Mono } from "next/font/google"
 import "./globals.css"
 
-export const share_tech_mono = Share_Tech_Mono({
+const share_tech_mono = Share_Tech_Mono({
   subsets: ["latin"],
   weight: "400",
 })
