@@ -3,6 +3,7 @@ import { checkInteractionTime } from "@/lib/utils"
 import { chain, publicClient, walletClient } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
+import { CSSProperties } from "react"
 import { formatEther, parseEther } from "viem"
 
 const frames = createFrames({
@@ -19,6 +20,19 @@ const frames = createFrames({
   ],
 })
 
+const div_style: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  backgroundColor: "black",
+  height: "100%",
+  width: "100%",
+  justifyContent: "center",
+  color: "#00FF41",
+  textShadow: "0 0 4px #00FF41,0 0 5px #00FF41,0 0 5px #00FF41",
+  filter: "blur(0.02rem)",
+}
+
 const handleRequest = frames(async (ctx) => {
   const message = ctx.message
   const wallet = walletClient.account.address
@@ -32,13 +46,7 @@ const handleRequest = frames(async (ctx) => {
   if (!message)
     return {
       image: (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        <div style={div_style}>
           Claim your coins!
           <span style={{ fontSize: "24px" }}>
             You have to like the cast and follow the caster first
@@ -63,13 +71,7 @@ const handleRequest = frames(async (ctx) => {
   ) {
     return {
       image: (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        <div style={div_style}>
           <span>@todo list</span>
           <span>[ {message.likedCast ? "x" : " "} ] Like</span>
           <span>[ {message.recastedCast ? "x" : " "} ] Recast</span>
@@ -87,13 +89,7 @@ const handleRequest = frames(async (ctx) => {
   if (!message.requesterVerifiedAddresses.length) {
     return {
       image: (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        <div style={div_style}>
           You don't have a Verified Address added to Farcaster
         </div>
       ),
@@ -117,13 +113,7 @@ const handleRequest = frames(async (ctx) => {
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     return {
       image: (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        <div style={div_style}>
           <span>GM, {message.requesterUserData?.displayName}!</span>
           <span>wait {lastInteractionTime.formattedTime}</span>
         </div>
@@ -151,13 +141,7 @@ const handleRequest = frames(async (ctx) => {
 
   return {
     image: (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
+      <div style={div_style}>
         ** you received 0.000333 eth on {chain.name} **
       </div>
     ),
