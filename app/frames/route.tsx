@@ -106,6 +106,7 @@ const handleRequest = frames(async (ctx) => {
     .from("users")
     .select("created_at", { count: "exact" })
     .eq("fid", message?.requesterFid)
+    .order("created_at", { ascending: false })
     .limit(1)
   const lastInteractionTime = checkInteractionTime(data)
 
