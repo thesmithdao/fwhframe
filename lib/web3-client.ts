@@ -1,10 +1,10 @@
 import { createPublicClient, createWalletClient, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { baseSepolia } from "viem/chains"
+import { optimism } from "viem/chains"
 
-export const chain = baseSepolia
+export const chain = optimism
 
-const account = privateKeyToAccount(
+export const account = privateKeyToAccount(
   process.env.WALLET_PRIVATE_KEY as `0x${string}`
 )
 

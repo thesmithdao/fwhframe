@@ -6,7 +6,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Faucet Frame",
     other: {
       ...(await fetchMetadata(
-        new URL("/frames", process.env.WEBSITE_URL || "http://localhost:3000")
+        new URL(
+          "/frames",
+          process.env.FOX_WEBSITE_URL || "http://localhost:3000"
+        )
       )),
     },
   }

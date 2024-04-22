@@ -1,10 +1,12 @@
+import { ABI } from "@/lib/abi"
+import { FOX_CONTRACT } from "@/lib/constants"
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
-import { chain, publicClient, walletClient } from "@/lib/web3-client"
+import { account, chain, publicClient, walletClient } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
 import { CSSProperties } from "react"
-import { formatEther, parseEther } from "viem"
+import { formatEther, formatUnits, parseUnits } from "viem"
 
 const frames = createFrames({
   basePath: "/frames",
@@ -42,23 +44,40 @@ const handleRequest = frames(async (ctx) => {
   })
   const balanceAsEther = formatEther(balance)
 
+  const foxBalance = await publicClient.readContract({
+    address: FOX_CONTRACT,
+    abi: ABI,
+    functionName: "balanceOf",
+    args: [wallet],
+  })
+
   // If no message, show home page
   if (!message)
     return {
       image: (
         <div style={div_style}>
-          Claim your coins!
+          Claim tokens!
           <span style={{ fontSize: "24px" }}>
             You have to like the cast and follow the caster first
           </span>
-          <span style={{ marginTop: "32px", fontSize: "24px" }}>
-            Faucet balance: {balanceAsEther}
-          </span>
+          <div
+            style={{
+              marginTop: "32px",
+              fontSize: "24px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <span>Faucet balance:</span>
+            <span>{balanceAsEther} ETH</span>
+            <span>{formatUnits(foxBalance, 18)} FOX</span>
+          </div>
         </div>
       ),
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          Claim
+          🦊 Claim Fox
         </Button>,
       ],
     }
@@ -98,7 +117,7 @@ const handleRequest = frames(async (ctx) => {
 
   // Find user last claim
   const { data, error } = await supabase
-    .from("users")
+    .from("fox_claims")
     .select("claimed_at", { count: "exact" })
     .eq("fid", message?.requesterFid)
     .order("claimed_at", { ascending: false })
@@ -122,25 +141,54 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
+  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
+
   // send transaction
-  await walletClient.sendTransaction({
-    to: message.requesterVerifiedAddresses[0] as `0x${string}`,
-    value: parseEther("0.000333"),
-  })
+  let receipt = ""
+  try {
+    const { request } = await publicClient.simulateContract({
+      account,
+      address: FOX_CONTRACT,
+      abi: ABI,
+      functionName: "transfer",
+      args: [userAddress, parseUnits("0.000333", 18)],
+    })
+    receipt = await walletClient.writeContract(request)
+  } catch (e: any) {
+    console.error(e)
+    return {
+      image: (
+        <div
+          style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}
+        >
+          <span>error:</span>
+          <span>{e.message}</span>
+        </div>
+      ),
+    }
+  }
 
   // Save claim history
-  await supabase.from("users").insert({
+  const save = await supabase.from("fox_claims").insert({
     fid: message?.requesterFid,
     f_address: message?.requesterCustodyAddress,
-    eth_address: message?.requesterVerifiedAddresses[0],
+    eth_address: userAddress,
   })
 
   return {
     image: (
       <div style={div_style}>
-        ** you received 0.000333 eth on {chain.name} **
+        ** you received 0.000333 FOX on {chain.name} **
       </div>
     ),
+    buttons: [
+      <Button
+        action="link"
+        target={`https://optimistic.etherscan.io/tx/${receipt}`}
+      >
+        See on Optimism Scan
+      </Button>,
+    ],
   }
 })
 
