@@ -10,7 +10,7 @@ The application is straightforward. The same API that creates the Frames will al
 
 The application uses [Supabase](https://supabase.com/docs/guides/api) to store information about user interactions. Therefore, it is necessary to create an account on the platform, create a table, and use it with the application.
 
-The `users` table should have the following columns:
+The table should have the following columns:
 
 ```
 id : int8 : primary
@@ -34,8 +34,8 @@ The faucet includes four environment variables, which are:
 To develop your own version of the Faucet, start by cloning the repository:
 
 ```bash
-git clone https://github.com/r4topunk/faucet-frame.git
-cd faucet-frame
+git clone https://github.com/r4topunk/shapeshift-faucet-frame.git
+cd shapeshift-faucet-frame
 ```
 
 Then, install the packages:
