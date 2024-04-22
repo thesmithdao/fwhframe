@@ -99,9 +99,9 @@ const handleRequest = frames(async (ctx) => {
   // Find user last claim
   const { data, error } = await supabase
     .from("users")
-    .select("created_at", { count: "exact" })
+    .select("claimed_at", { count: "exact" })
     .eq("fid", message?.requesterFid)
-    .order("created_at", { ascending: false })
+    .order("claimed_at", { ascending: false })
     .limit(1)
   const lastInteractionTime = checkInteractionTime(data)
 

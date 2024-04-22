@@ -1,13 +1,13 @@
 export function checkInteractionTime(
   queryData:
     | {
-        created_at: any
+        claimed_at: any
       }[]
     | null
 ) {
   if (!queryData || !queryData.length) return null
 
-  const lastInteractionTime = queryData[0].created_at
+  const lastInteractionTime = queryData[0].claimed_at
 
   const lastInteractionDate = new Date(lastInteractionTime)
   const currentDate = new Date()
