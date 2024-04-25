@@ -7,13 +7,14 @@ import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
 import { CSSProperties } from "react"
 import { formatEther, formatUnits, parseUnits } from "viem"
+import { WEBSITE_URL } from "../page"
 
 const frames = createFrames({
   basePath: "/frames",
   middleware: [
     farcasterHubContext({
       // remove if you aren't using @frames.js/debugger or you just don't want to use the debugger hub
-      ...(process.env.NODE_ENV === "production"
+      ...(process.env.NODE_ENV === "development"
         ? {}
         : {
             hubHttpUrl: "http://localhost:3010/hub",
@@ -56,6 +57,11 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: (
         <div style={div_style}>
+          <img
+            src={WEBSITE_URL + "/FOX_Icon_white.svg"}
+            width={"128px"}
+            height={"128px"}
+          />
           Claim tokens!
           <span style={{ fontSize: "24px" }}>
             You have to like the cast and follow the caster first

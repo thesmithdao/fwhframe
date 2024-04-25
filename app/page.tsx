@@ -1,16 +1,16 @@
 import { fetchMetadata } from "frames.js/next"
 import { Metadata } from "next"
 
+export const WEBSITE_URL =
+  process.env.FOX_WEBSITE_URL || "http://localhost:3000"
+
+console.log({ WEBSITE_URL })
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Faucet Frame",
     other: {
-      ...(await fetchMetadata(
-        new URL(
-          "/frames",
-          process.env.FOX_WEBSITE_URL || "http://localhost:3000"
-        )
-      )),
+      ...(await fetchMetadata(new URL("/frames", WEBSITE_URL))),
     },
   }
 }
@@ -31,6 +31,12 @@ export default async function Home() {
         gap: "24px",
       }}
     >
+      <img
+        src={WEBSITE_URL + "/FOX_Icon_white.svg"}
+        width={"64px"}
+        height={"64px"}
+        color="green"
+      />
       <span style={{ fontSize: "24px" }}>Farcaster Faucet Frame</span>
       <a
         href="https://warpcast.com/r4topunk/0x12d169c7"
