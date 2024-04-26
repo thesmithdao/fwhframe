@@ -2,7 +2,7 @@ import { ABI } from "@/lib/abi"
 import { FOX_CONTRACT } from "@/lib/constants"
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
-import { account, chain, publicClient, walletClient } from "@/lib/web3-client"
+import { account, publicClient, walletClient } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
 import { CSSProperties } from "react"
@@ -148,11 +148,7 @@ const handleRequest = frames(async (ctx) => {
   })
 
   return {
-    image: (
-      <div style={div_style}>
-        ** you received 0.000333 FOX on {chain.name} **
-      </div>
-    ),
+    image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
     buttons: [
       <Button
         action="link"
