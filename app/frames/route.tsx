@@ -14,7 +14,7 @@ const frames = createFrames({
   middleware: [
     farcasterHubContext({
       // remove if you aren't using @frames.js/debugger or you just don't want to use the debugger hub
-      ...(process.env.NODE_ENV === "development"
+      ...(process.env.NODE_ENV === "production"
         ? {}
         : {
             hubHttpUrl: "http://localhost:3010/hub",
@@ -39,6 +39,8 @@ const div_style: CSSProperties = {
 const handleRequest = frames(async (ctx) => {
   const message = ctx.message
   const wallet = walletClient.account.address
+
+  console.log({message})
 
   const balance = await publicClient.getBalance({
     address: wallet,
