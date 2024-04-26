@@ -46,7 +46,8 @@ const handleRequest = frames(async (ctx) => {
   // If no message, show home page
   if (!message)
     return {
-      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
+      image:
+        "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim Fox
@@ -98,6 +99,7 @@ const handleRequest = frames(async (ctx) => {
 
   // If find claims or has not passed 24 hours since last claim
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
+    const buttonText = `Try again in ${lastInteractionTime.formattedTime}`
     return {
       image: (
         <div style={div_style}>
@@ -107,7 +109,7 @@ const handleRequest = frames(async (ctx) => {
       ),
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          Try again
+          {buttonText}
         </Button>,
       ],
     }
@@ -148,7 +150,8 @@ const handleRequest = frames(async (ctx) => {
   })
 
   return {
-    image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
+    image:
+      "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
     buttons: [
       <Button
         action="link"
