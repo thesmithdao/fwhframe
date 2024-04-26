@@ -2,7 +2,7 @@ import { fetchMetadata } from "frames.js/next"
 import { Metadata } from "next"
 
 export const WEBSITE_URL =
-  process.env.FOX_WEBSITE_URL || "http://localhost:3000"
+  process.env.WEBSITE_URL || "http://localhost:3000"
 
 console.log({ WEBSITE_URL })
 
