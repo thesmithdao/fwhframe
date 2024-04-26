@@ -6,8 +6,7 @@ import { account, chain, publicClient, walletClient } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
 import { CSSProperties } from "react"
-import { formatEther, formatUnits, parseUnits } from "viem"
-import { WEBSITE_URL } from "../page"
+import { parseUnits } from "viem"
 
 const frames = createFrames({
   basePath: "/frames",
@@ -40,49 +39,14 @@ const handleRequest = frames(async (ctx) => {
   const message = ctx.message
   const wallet = walletClient.account.address
 
-  console.log({message})
-
   const balance = await publicClient.getBalance({
     address: wallet,
-  })
-  const balanceAsEther = formatEther(balance)
-
-  const foxBalance = await publicClient.readContract({
-    address: FOX_CONTRACT,
-    abi: ABI,
-    functionName: "balanceOf",
-    args: [wallet],
   })
 
   // If no message, show home page
   if (!message)
     return {
-      image: (
-        <div style={div_style}>
-          <img
-            src={WEBSITE_URL + "/FOX_Icon_white.svg"}
-            width={"128px"}
-            height={"128px"}
-          />
-          Claim tokens!
-          <span style={{ fontSize: "24px" }}>
-            You have to like the cast and follow the caster first
-          </span>
-          <div
-            style={{
-              marginTop: "32px",
-              fontSize: "24px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <span>Faucet balance:</span>
-            <span>{balanceAsEther} ETH</span>
-            <span>{formatUnits(foxBalance, 18)} FOX</span>
-          </div>
-        </div>
-      ),
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim Fox
