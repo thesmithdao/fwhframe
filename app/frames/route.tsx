@@ -100,11 +100,7 @@ const handleRequest = frames(async (ctx) => {
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     const buttonText = `Try again in ${lastInteractionTime.formattedTime}`
     return {
-      image: (
-        <div style={div_style}>
-          <span>wait {lastInteractionTime.formattedTime} hours</span>
-        </div>
-      ),
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           {buttonText}
