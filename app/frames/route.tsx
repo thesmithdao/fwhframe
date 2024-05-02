@@ -161,7 +161,7 @@ const handleRequest = frames(async (ctx) => {
         action="link"
         target={`https://optimistic.etherscan.io/tx/${receipt}`}
       >
-        See on Optimism Scan
+        See on OP Scan
       </Button>,
     ],
   }
