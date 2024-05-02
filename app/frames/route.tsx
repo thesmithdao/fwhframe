@@ -68,13 +68,7 @@ const handleRequest = frames(async (ctx) => {
   // If user didn't complete the requirements, show to do list
   if (!message.likedCast || !message.requesterFollowsCaster) {
     return {
-      image: (
-        <div style={div_style}>
-          <span>@todo list</span>
-          <span>[ {message.likedCast ? "x" : " "} ] Like</span>
-          <span>[ {message.requesterFollowsCaster ? "x" : " "} ] Follow</span>
-        </div>
-      ),
+      image: image,
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           Try again
