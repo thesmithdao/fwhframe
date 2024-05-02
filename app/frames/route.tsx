@@ -37,11 +37,6 @@ const div_style: CSSProperties = {
 
 const handleRequest = frames(async (ctx) => {
   const message = ctx.message
-  const wallet = walletClient.account.address
-
-  const balance = await publicClient.getBalance({
-    address: wallet,
-  })
 
   // If no message, show home page
   if (!message)
@@ -107,8 +102,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: (
         <div style={div_style}>
-          <span>GM, {message.requesterUserData?.displayName}!</span>
-          <span>wait {lastInteractionTime.formattedTime}</span>
+          <span>wait {lastInteractionTime.formattedTime} hours</span>
         </div>
       ),
       buttons: [
