@@ -44,7 +44,7 @@ const handleRequest = frames(async (ctx) => {
         "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          🦊 Claim FWH
+          🎩 Claim FWH
         </Button>,
       ],
     };
@@ -60,7 +60,7 @@ const handleRequest = frames(async (ctx) => {
 
   if (!lastInteractionTime || !lastInteractionTime.has24HoursPassed) {
     return {
-      image: "ttps://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
+      image: "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           {`Try again in ${lastInteractionTime?.formattedTime || "24 hours"}`}
@@ -120,7 +120,7 @@ const handleRequest = frames(async (ctx) => {
 
   return {
     image:
-      "ttps://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
+      "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
       <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
