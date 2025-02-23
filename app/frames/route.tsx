@@ -48,21 +48,6 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  if (!message.requesterVerifiedAddresses || message.requesterVerifiedAddresses.length === 0) {
-    return {
-      image: (
-        <div style={div_style}>
-          You don't have a Verified Address added to Farcaster
-        </div>
-      ),
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    };
-  }
-
   // Find user last claim
   const { data, error } = await supabase
     .from("fwh_claims")
@@ -84,7 +69,7 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`;
+  const userAddress = message.requesterCustodyAddress as `0x${string}`;
 
   let receipt = "";
   try {
