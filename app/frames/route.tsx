@@ -41,10 +41,10 @@ const handleRequest = frames(async (ctx) => {
   if (!message)
     return {
       image:
-        "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
+        "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          🎩 Claim FWH
+          🦊 Claim FWH
         </Button>,
       ],
     };
@@ -52,7 +52,7 @@ const handleRequest = frames(async (ctx) => {
   const { data } = await supabase
     .from("fwh_claims")
     .select("claimed_at")
-    .eq("fid", message?.requesterFid)
+    .eq("fid", message?.requesterFid || "")
     .order("claimed_at", { ascending: false })
     .limit(1);
   
@@ -60,7 +60,7 @@ const handleRequest = frames(async (ctx) => {
 
   if (!lastInteractionTime || !lastInteractionTime.has24HoursPassed) {
     return {
-      image: "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           {`Try again in ${lastInteractionTime?.formattedTime || "24 hours"}`}
@@ -112,15 +112,17 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  await supabase.from("fwh_claims").insert({
-    fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress,
-    eth_address: userAddress,
-  });
+  if (message?.requesterFid) {
+    await supabase.from("fwh_claims").insert({
+      fid: message.requesterFid,
+      f_address: message?.requesterCustodyAddress || "",
+      eth_address: userAddress,
+    });
+  }
 
   return {
     image:
-      "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
+      "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
     buttons: [
       <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
