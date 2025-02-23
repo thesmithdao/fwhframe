@@ -3,9 +3,23 @@ import { FWH_CONTRACT } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { checkInteractionTime } from "@/lib/utils";
 import { account, publicClient, walletClient } from "@/lib/web3-client";
+import { farcasterHubContext } from "frames.js/middleware";
 import { Button, createFrames } from "frames.js/next";
 import { CSSProperties } from "react";
 import { parseUnits } from "viem";
+
+const frames = createFrames({
+  basePath: "/frames",
+  middleware: [
+    farcasterHubContext({
+      ...(process.env.NODE_ENV === "production"
+        ? {}
+        : {
+            hubHttpUrl: "http://localhost:3010/hub",
+          }),
+    }),
+  ],
+});
 
 const div_style: CSSProperties = {
   display: "flex",
@@ -20,9 +34,7 @@ const div_style: CSSProperties = {
   filter: "blur(0.02rem)",
 };
 
-const handleRequest = createFrames({
-  basePath: "/frames",
-})(async (ctx) => {
+const handleRequest = frames(async (ctx) => {
   const message = ctx.message;
 
   if (!message)
@@ -36,7 +48,7 @@ const handleRequest = createFrames({
       ],
     };
 
-  if (!message.requesterVerifiedAddresses.length) {
+  if (!message.requesterVerifiedAddresses || message.requesterVerifiedAddresses.length === 0) {
     return {
       image: (
         <div style={div_style}>
