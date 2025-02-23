@@ -41,7 +41,7 @@ const handleRequest = frames(async (ctx) => {
   if (!message)
     return {
       image:
-        "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.gif?raw=true",
+        "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim FWH
