@@ -3,13 +3,22 @@ import { FWH_CONTRACT } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { checkInteractionTime } from "@/lib/utils";
 import { account, publicClient, walletClient } from "@/lib/web3-client";
-import { getAddressForFid } from "frames.js";
+import { farcasterHubContext } from "frames.js/middleware";
 import { Button, createFrames } from "frames.js/next";
 import { CSSProperties } from "react";
 import { parseUnits } from "viem";
 
 const frames = createFrames({
-  basePath: "https://fwhframe.vercel.app/frames",
+  basePath: "/frames",
+  middleware: [
+    farcasterHubContext({
+      ...(process.env.NODE_ENV === "production"
+        ? {}
+        : {
+            hubHttpUrl: "http://localhost:3010/hub",
+          }),
+    }),
+  ],
 });
 
 const div_style: CSSProperties = {
@@ -42,24 +51,9 @@ const handleRequest = frames(async (ctx) => {
   const { data, error } = await supabase
     .from("fwh_claims")
     .select("claimed_at")
-    .eq("fid", message?.requesterFid || "")
+    .eq("eth_address", message?.requesterVerifiedAddresses?.[0] || "")
     .order("claimed_at", { ascending: false })
     .limit(1);
-
-  if (error) {
-    return {
-      image: (
-        <div style={div_style}>
-          Supabase query error. Please try again later.
-        </div>
-      ),
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    };
-  }
 
   const lastInteractionTime = checkInteractionTime(data);
 
@@ -74,10 +68,7 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = await getAddressForFid({
-    fid: message.requesterFid,
-    options: { fallbackToCustodyAddress: true },
-  });
+  const userAddress = message.requesterVerifiedAddresses?.[0] as `0x${string}`;
 
   if (!userAddress) {
     return {
@@ -117,14 +108,12 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  await supabase.from("fwh_claims").insert([
-    {
-      fid: message.requesterFid,
-      f_address: userAddress || "",
-      eth_address: userAddress,
-      claimed_at: new Date().toISOString(),
-    },
-  ]);
+  await supabase.from("fwh_claims").insert({
+    fid: message?.requesterFid,
+    f_address: message?.requesterVerifiedAddresses?.[0] || "",
+    eth_address: userAddress,
+    claimed_at: new Date().toISOString(),
+  });
 
   return {
     image:
