@@ -69,7 +69,7 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message.requesterCustodyAddress as `0x${string}`;
+  const userAddress = message.requesterCustodyAddress ? message.requesterCustodyAddress as `0x${string}` : null;
 
   let receipt = "";
   try {
