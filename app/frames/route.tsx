@@ -39,8 +39,7 @@ const handleRequest = frames(async (ctx) => {
 
   if (!message)
     return {
-      image:
-        "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
+      image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim FWH
@@ -48,27 +47,10 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  if (!message.requesterVerifiedAddresses?.length) {
-    return {
-      image: (
-        <div style={div_style}>
-          You don't have a Verified Address added to Farcaster
-        </div>
-      ),
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    };
-  }
-
-  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`;
-
   const { data } = await supabase
     .from("fwh_claims")
     .select("claimed_at")
-    .eq("eth_address", userAddress)
+    .eq("eth_address", message?.requesterVerifiedAddresses?.[0] || "")
     .order("claimed_at", { ascending: false })
     .limit(1);
 
@@ -85,30 +67,57 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const { request } = await publicClient.simulateContract({
-    account,
-    address: FWH_CONTRACT,
-    abi: ABI,
-    functionName: "transfer",
-    args: [userAddress, parseUnits("0.000333", 18)],
+  const userAddress = message.requesterVerifiedAddresses?.[0] as `0x${string}`;
+
+  if (!userAddress) {
+    return {
+      image: (
+        <div style={div_style}>
+          No valid wallet address found.
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    };
+  }
+
+  let receipt = "";
+  try {
+    const { request } = await publicClient.simulateContract({
+      account,
+      address: FWH_CONTRACT,
+      abi: ABI,
+      functionName: "transfer",
+      args: [userAddress, parseUnits("0.000333", 18)],
+    });
+    receipt = await walletClient.writeContract(request);
+  } catch (e: any) {
+    return {
+      image: (
+        <div style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}>
+          <span>error:</span>
+          <span>{e.message}</span>
+        </div>
+      ),
+    };
+  }
+
+  await supabase.from("fwh_claims").insert({
+    fid: message?.requesterFid || 0, 
+    f_address: message?.requesterVerifiedAddresses?.[0] || "N/A", 
+    eth_address: userAddress,
+    claimed_at: new Date().toISOString(),
   });
 
-  const receipt = await walletClient.writeContract(request);
-
-const { data: insertedData, error: insertError } = await supabase.from("fwh_claims").insert([
-  {
-    fid: Number(message?.requesterFid) || 0,  /
-    f_address: message?.requesterVerifiedAddresses?.[0] || "N/A",  
-    eth_address: userAddress || "N/A", 
-    claimed_at: new Date().toISOString(), 
-  }
-]).select(); 
-
   return {
-    image:
-      "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
+    image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
-      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>See on Base Scan</Button>,
+      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
+        See on Base Scan
+      </Button>,
     ],
   };
 });
