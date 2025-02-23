@@ -16,7 +16,7 @@ const frames = createFrames({
       ...(process.env.NODE_ENV === "production"
         ? {}
         : {
-            hubHttpUrl: "http://localhost:3010/hub",
+            hubHttpUrl: "https://fwhframe.vercel.app:3010/hub",
           }),
     }),
   ],
@@ -55,7 +55,7 @@ const handleRequest = frames(async (ctx) => {
     .eq("fid", message?.requesterFid || "")
     .order("claimed_at", { ascending: false })
     .limit(1);
-  
+
   const lastInteractionTime = checkInteractionTime(data || []);
 
   if (!lastInteractionTime || !lastInteractionTime.has24HoursPassed) {
@@ -117,6 +117,7 @@ const handleRequest = frames(async (ctx) => {
       fid: message.requesterFid,
       f_address: message?.requesterCustodyAddress || "",
       eth_address: userAddress,
+      claimed_at: new Date().toISOString(),
     });
   }
 
