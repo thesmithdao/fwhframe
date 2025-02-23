@@ -60,7 +60,7 @@ const handleRequest = frames(async (ctx) => {
      image = "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/fox_like.png?raw=true"
   }
 
-   If user didn't complete the requirements, show to do list
+   // If user didn't complete the requirements, show to do list
    if (!message.likedCast || !message.requesterFollowsCaster) {
      return {
        image: image,
