@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { checkInteractionTime } from "@/lib/utils";
 import { account, publicClient, walletClient } from "@/lib/web3-client";
 import { farcasterHubContext } from "frames.js/middleware";
+import { getAddressForFid } from "frames.js";
 import { Button, createFrames } from "frames.js/next";
 import { CSSProperties } from "react";
 import { parseUnits } from "viem";
@@ -69,7 +70,25 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message.requesterCustodyAddress ? message.requesterCustodyAddress as `0x${string}` : null;
+  const userAddress = await getAddressForFid({
+    fid: message.requesterFid,
+    options: { fallbackToCustodyAddress: true },
+  });
+
+  if (!userAddress) {
+    return {
+      image: (
+        <div style={div_style}>
+          No valid wallet address found.
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    };
+  }
 
   let receipt = "";
   try {
