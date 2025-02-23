@@ -3,22 +3,12 @@ import { FWH_CONTRACT } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { checkInteractionTime } from "@/lib/utils";
 import { account, publicClient, walletClient } from "@/lib/web3-client";
-import { farcasterHubContext } from "frames.js/middleware";
 import { Button, createFrames } from "frames.js/next";
 import { CSSProperties } from "react";
 import { parseUnits } from "viem";
 
 const frames = createFrames({
   basePath: "/frames",
-  middleware: [
-    farcasterHubContext({
-      ...(process.env.NODE_ENV === "production"
-        ? {}
-        : {
-            hubHttpUrl: "http://localhost:3010/hub",
-          }),
-    }),
-  ],
 });
 
 const div_style: CSSProperties = {
@@ -39,7 +29,8 @@ const handleRequest = frames(async (ctx) => {
 
   if (!message)
     return {
-      image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
+      image:
+        "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim FWH
@@ -47,33 +38,15 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  const { data } = await supabase
-    .from("fwh_claims")
-    .select("claimed_at")
-    .eq("eth_address", message?.requesterVerifiedAddresses?.[0] || "")
-    .order("claimed_at", { ascending: false })
-    .limit(1);
-
-  const lastInteractionTime = checkInteractionTime(data);
-
-  if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
-    return {
-      image: "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          {`Try again in ${lastInteractionTime.formattedTime}`}
-        </Button>,
-      ],
-    };
-  }
-
-  const userAddress = message.requesterVerifiedAddresses?.[0] as `0x${string}`;
+  // Ensure user has a verified address or fallback to custody address
+  const userAddress =
+    message.requesterVerifiedAddresses?.[0] || message.requesterCustodyAddress;
 
   if (!userAddress) {
     return {
       image: (
         <div style={div_style}>
-          No valid wallet address found.
+          You don't have a Verified Address added to Farcaster.
         </div>
       ),
       buttons: [
@@ -84,36 +57,52 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  let receipt = "";
-  try {
-    const { request } = await publicClient.simulateContract({
-      account,
-      address: FWH_CONTRACT,
-      abi: ABI,
-      functionName: "transfer",
-      args: [userAddress, parseUnits("0.000333", 18)],
-    });
-    receipt = await walletClient.writeContract(request);
-  } catch (e: any) {
+  // Check last claim
+  const { data } = await supabase
+    .from("fwh_claims")
+    .select("claimed_at")
+    .eq("eth_address", userAddress)
+    .order("claimed_at", { ascending: false })
+    .limit(1);
+
+  const lastInteractionTime = checkInteractionTime(data);
+
+  if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     return {
-      image: (
-        <div style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}>
-          <span>error:</span>
-          <span>{e.message}</span>
-        </div>
-      ),
+      image:
+        "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          {`Try again in ${lastInteractionTime.formattedTime}`}
+        </Button>,
+      ],
     };
   }
 
-  await supabase.from("fwh_claims").insert({
-    fid: message?.requesterFid || 0, 
-    f_address: message?.requesterVerifiedAddresses?.[0] || "N/A", 
-    eth_address: userAddress,
-    claimed_at: new Date().toISOString(),
+  // Process transaction
+  const { request } = await publicClient.simulateContract({
+    account,
+    address: FWH_CONTRACT,
+    abi: ABI,
+    functionName: "transfer",
+    args: [userAddress, parseUnits("0.000333", 18)],
   });
 
+  const receipt = await walletClient.writeContract(request);
+
+  // Insert claim into Supabase
+  await supabase.from("fwh_claims").insert([
+    {
+      fid: Number(message?.requesterFid) || 0,
+      f_address: userAddress,
+      eth_address: userAddress,
+      claimed_at: new Date().toISOString(),
+    },
+  ]);
+
   return {
-    image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
+    image:
+      "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
       <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
