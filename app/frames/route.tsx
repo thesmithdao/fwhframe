@@ -10,16 +10,7 @@ import { CSSProperties } from "react";
 import { parseUnits } from "viem";
 
 const frames = createFrames({
-  basePath: "/frames",
-  middleware: [
-    farcasterHubContext({
-      ...(process.env.NODE_ENV === "production"
-        ? {}
-        : {
-            hubHttpUrl: "https://fwhframe.vercel.app:3010/hub",
-          }),
-    }),
-  ],
+  basePath: "https://fwhframe.vercel.app/frames",
 });
 
 const div_style: CSSProperties = {
@@ -127,16 +118,14 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  if (message?.requesterFid) {
-    await supabase.from("fwh_claims").insert([
-      {
-        fid: message.requesterFid,
-        f_address: message?.requesterCustodyAddress || "",
-        eth_address: userAddress,
-        claimed_at: new Date().toISOString(),
-      },
-    ]);
-  }
+  await supabase.from("fwh_claims").insert([
+    {
+      fid: message.requesterFid,
+      f_address: userAddress || "",
+      eth_address: userAddress,
+      claimed_at: new Date().toISOString(),
+    },
+  ]);
 
   return {
     image:
