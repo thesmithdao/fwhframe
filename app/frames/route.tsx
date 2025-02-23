@@ -3,7 +3,6 @@ import { FWH_CONTRACT } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { checkInteractionTime } from "@/lib/utils";
 import { account, publicClient, walletClient } from "@/lib/web3-client";
-import { farcasterHubContext } from "frames.js/middleware";
 import { getAddressForFid } from "frames.js";
 import { Button, createFrames } from "frames.js/next";
 import { CSSProperties } from "react";
