@@ -49,21 +49,36 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("fwh_claims")
     .select("claimed_at")
     .eq("fid", message?.requesterFid || "")
     .order("claimed_at", { ascending: false })
     .limit(1);
 
-  const lastInteractionTime = checkInteractionTime(data || []);
+  if (error) {
+    return {
+      image: (
+        <div style={div_style}>
+          Supabase query error. Please try again later.
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    };
+  }
 
-  if (!lastInteractionTime || !lastInteractionTime.has24HoursPassed) {
+  const lastInteractionTime = checkInteractionTime(data);
+
+  if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     return {
       image: "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          {`Try again in ${lastInteractionTime?.formattedTime || "24 hours"}`}
+          {`Try again in ${lastInteractionTime.formattedTime}`}
         </Button>,
       ],
     };
@@ -113,21 +128,21 @@ const handleRequest = frames(async (ctx) => {
   }
 
   if (message?.requesterFid) {
-    await supabase.from("fwh_claims").insert({
-      fid: message.requesterFid,
-      f_address: message?.requesterCustodyAddress || "",
-      eth_address: userAddress,
-      claimed_at: new Date().toISOString(),
-    });
+    await supabase.from("fwh_claims").insert([
+      {
+        fid: message.requesterFid,
+        f_address: message?.requesterCustodyAddress || "",
+        eth_address: userAddress,
+        claimed_at: new Date().toISOString(),
+      },
+    ]);
   }
 
   return {
     image:
       "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
-      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
-        See on Base Scan
-      </Button>,
+      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>See on Base Scan</Button>,
     ],
   };
 });
