@@ -38,9 +38,8 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  // Ensure user has a verified address or fallback to custody address
   const userAddress =
-    message.requesterVerifiedAddresses?.[0] || message.requesterCustodyAddress;
+    (message as any)?.requesterVerifiedAddresses?.[0] || (message as any)?.requesterCustodyAddress;
 
   if (!userAddress) {
     return {
@@ -93,7 +92,7 @@ const handleRequest = frames(async (ctx) => {
   // Insert claim into Supabase
   await supabase.from("fwh_claims").insert([
     {
-      fid: Number(message?.requesterFid) || 0,
+      fid: Number((message as any)?.requesterFid) || 0,
       f_address: userAddress,
       eth_address: userAddress,
       claimed_at: new Date().toISOString(),
