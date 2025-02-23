@@ -1,7 +1,7 @@
 import { fetchMetadata } from "frames.js/next";
 import { Metadata } from "next";
 
-const WEBSITE_URL = process.env.FWH_WEBSITE_URL || "https://fwhframe.vercel.app";
+const WEBSITE_URL = process.env.FWH_WEBSITE_URL || "https://fwhframe.vercel.app/frames";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
