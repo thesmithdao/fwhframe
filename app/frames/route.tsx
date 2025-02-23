@@ -49,22 +49,21 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  // Find user last claim
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("fwh_claims")
-    .select("claimed_at", { count: "exact" })
+    .select("claimed_at")
     .eq("fid", message?.requesterFid)
     .order("claimed_at", { ascending: false })
     .limit(1);
-  const lastInteractionTime = checkInteractionTime(data);
+  
+  const lastInteractionTime = checkInteractionTime(data || []);
 
-  if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
-    const buttonText = `Try again in ${lastInteractionTime.formattedTime}`;
+  if (!lastInteractionTime?.has24HoursPassed) {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          {buttonText}
+          Try again in {lastInteractionTime.formattedTime}
         </Button>,
       ],
     };
@@ -101,7 +100,6 @@ const handleRequest = frames(async (ctx) => {
     });
     receipt = await walletClient.writeContract(request);
   } catch (e: any) {
-    console.error(e);
     return {
       image: (
         <div
