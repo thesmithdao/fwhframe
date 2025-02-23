@@ -63,7 +63,7 @@ const handleRequest = frames(async (ctx) => {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          Try again in {lastInteractionTime.formattedTime}
+          {`Try again in ${lastInteractionTime.formattedTime}`}
         </Button>,
       ],
     };
