@@ -95,12 +95,14 @@ const handleRequest = frames(async (ctx) => {
 
   const receipt = await walletClient.writeContract(request);
 
-  await supabase.from("fwh_claims").insert({
-    fid: message?.requesterFid,
-    f_address: message?.requesterVerifiedAddresses?.[0] || "",
-    eth_address: userAddress,
-    claimed_at: new Date().toISOString(),
-  });
+const { data: insertedData, error: insertError } = await supabase.from("fwh_claims").insert([
+  {
+    fid: Number(message?.requesterFid) || 0,  /
+    f_address: message?.requesterVerifiedAddresses?.[0] || "N/A",  
+    eth_address: userAddress || "N/A", 
+    claimed_at: new Date().toISOString(), 
+  }
+]).select(); 
 
   return {
     image:
