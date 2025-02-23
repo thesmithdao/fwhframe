@@ -41,7 +41,7 @@ const handleRequest = frames(async (ctx) => {
   if (!message)
     return {
       image:
-        "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
+        "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim FWH
@@ -60,7 +60,7 @@ const handleRequest = frames(async (ctx) => {
 
   if (!lastInteractionTime || !lastInteractionTime.has24HoursPassed) {
     return {
-      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
+      image: "ttps://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           {`Try again in ${lastInteractionTime?.formattedTime || "24 hours"}`}
@@ -120,7 +120,7 @@ const handleRequest = frames(async (ctx) => {
 
   return {
     image:
-      "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
+      "ttps://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
       <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
