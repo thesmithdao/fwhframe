@@ -48,10 +48,27 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  const { data, error } = await supabase
+  if (!message.requesterVerifiedAddresses?.length) {
+    return {
+      image: (
+        <div style={div_style}>
+          You don't have a Verified Address added to Farcaster
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    };
+  }
+
+  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`;
+
+  const { data } = await supabase
     .from("fwh_claims")
     .select("claimed_at")
-    .eq("eth_address", message?.requesterVerifiedAddresses?.[0] || "")
+    .eq("eth_address", userAddress)
     .order("claimed_at", { ascending: false })
     .limit(1);
 
@@ -68,45 +85,15 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message.requesterVerifiedAddresses?.[0] as `0x${string}`;
+  const { request } = await publicClient.simulateContract({
+    account,
+    address: FWH_CONTRACT,
+    abi: ABI,
+    functionName: "transfer",
+    args: [userAddress, parseUnits("0.000333", 18)],
+  });
 
-  if (!userAddress) {
-    return {
-      image: (
-        <div style={div_style}>
-          No valid wallet address found.
-        </div>
-      ),
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    };
-  }
-
-  let receipt = "";
-  try {
-    const { request } = await publicClient.simulateContract({
-      account,
-      address: FWH_CONTRACT,
-      abi: ABI,
-      functionName: "transfer",
-      args: [userAddress, parseUnits("0.000333", 18)],
-    });
-    receipt = await walletClient.writeContract(request);
-  } catch (e: any) {
-    return {
-      image: (
-        <div
-          style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}
-        >
-          <span>error:</span>
-          <span>{e.message}</span>
-        </div>
-      ),
-    };
-  }
+  const receipt = await walletClient.writeContract(request);
 
   await supabase.from("fwh_claims").insert({
     fid: message?.requesterFid,

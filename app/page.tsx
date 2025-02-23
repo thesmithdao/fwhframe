@@ -1,8 +1,7 @@
-import { fetchMetadata } from "frames.js/next"
-import { Metadata } from "next"
+import { fetchMetadata } from "frames.js/next";
+import { Metadata } from "next";
 
-const WEBSITE_URL =
-  process.env.FWH_WEBSITE_URL || "http://localhost:3000/"
+const WEBSITE_URL = process.env.FWH_WEBSITE_URL || "https://fwhframe.vercel.app";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -10,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
     other: {
       ...(await fetchMetadata(new URL("/frames", WEBSITE_URL))),
     },
-  }
+  };
 }
 
 export default async function Home() {
@@ -30,10 +29,10 @@ export default async function Home() {
       }}
     >
       <img
-        src={WEBSITE_URL + "/FOX_Icon_white.svg"}
-        width={"64px"}
-        height={"64px"}
-        color="green"
+        src={`${WEBSITE_URL}/FOX_Icon_white.svg`}
+        width={64}
+        height={64}
+        alt="FOX Icon"
       />
       <span style={{ fontSize: "24px" }}>Farcaster Faucet Frame</span>
       <a
@@ -52,5 +51,5 @@ export default async function Home() {
         View Cast
       </a>
     </div>
-  )
+  );
 }
