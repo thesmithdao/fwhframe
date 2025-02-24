@@ -25,7 +25,8 @@ const div_style: CSSProperties = {
 };
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message as any;
+  const message = ctx.message as any; // Bypass strict TypeScript checking
+
   if (!message)
     return {
       image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
