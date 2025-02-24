@@ -25,7 +25,7 @@ const div_style: CSSProperties = {
 };
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message;
+  const message = ctx.message as any;
 
   if (!message)
     return {
@@ -38,7 +38,7 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  if (!message?.requesterVerifiedAddresses?.length) {
+  if (!message.requesterVerifiedAddresses || !message.requesterVerifiedAddresses.length) {
     return {
       image: (
         <div style={div_style}>
@@ -53,7 +53,7 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message?.requesterVerifiedAddresses?.[0] as `0x${string}` || message?.requesterCustodyAddress;
+  const userAddress: `0x${string}` = message.requesterVerifiedAddresses[0] as `0x${string}`;
 
   if (!userAddress) {
     return {
@@ -71,18 +71,19 @@ const handleRequest = frames(async (ctx) => {
   }
 
   // Find user last claim
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("fwh_claims")
-    .select("claimed_at", { count: "exact" })
-    .eq("fid", message?.requesterFid)
+    .select("claimed_at")
+    .eq("eth_address", userAddress)
     .order("claimed_at", { ascending: false })
     .limit(1);
-  
+
   const lastInteractionTime = checkInteractionTime(data);
 
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     return {
-      image: "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
+      image:
+        "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           {`Try again in ${lastInteractionTime.formattedTime}`}
@@ -117,9 +118,10 @@ const handleRequest = frames(async (ctx) => {
 
   // Save claim history
   await supabase.from("fwh_claims").insert({
-    fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress,
+    fid: message?.requesterFid || 0,
+    f_address: message?.requesterVerifiedAddresses?.[0] || "N/A",
     eth_address: userAddress,
+    claimed_at: new Date().toISOString(),
   });
 
   return {
