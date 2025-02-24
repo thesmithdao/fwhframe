@@ -25,7 +25,7 @@ const div_style: CSSProperties = {
 };
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message;
+  const message = ctx.message as any; // Ensure message is treated as an object
 
   if (!message)
     return {
@@ -37,7 +37,8 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  if (!message.requesterVerifiedAddresses?.length) {
+  // Ensure `requesterVerifiedAddresses` exists and is an array before accessing it
+  if (!message?.requesterVerifiedAddresses?.length) {
     return {
       image: (
         <div style={div_style}>
@@ -52,57 +53,75 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`;
-
   // Find user last claim
   const { data } = await supabase
     .from("fwh_claims")
     .select("claimed_at")
-    .eq("eth_address", userAddress)
+    .eq("fid", message?.requesterFid)
     .order("claimed_at", { ascending: false })
     .limit(1);
-
+  
   const lastInteractionTime = checkInteractionTime(data);
 
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
+    const buttonText = `Try again in ${lastInteractionTime.formattedTime}`;
     return {
       image: "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          {`Try again in ${lastInteractionTime.formattedTime}`}
+          {buttonText}
         </Button>,
       ],
     };
   }
 
-  // Send transaction
-  const { request } = await publicClient.simulateContract({
-    account,
-    address: FWH_CONTRACT,
-    abi: ABI,
-    functionName: "transfer",
-    args: [userAddress, parseUnits("0.000333", 18)],
-  });
+  const userAddress = message?.requesterVerifiedAddresses?.[0] as `0x${string}`;
 
-  const receipt = await walletClient.writeContract(request);
+  // Send transaction
+  let receipt = "";
+  try {
+    const { request } = await publicClient.simulateContract({
+      account,
+      address: FWH_CONTRACT,
+      abi: ABI,
+      functionName: "transfer",
+      args: [userAddress, parseUnits("0.000333", 18)],
+    });
+    receipt = await walletClient.writeContract(request);
+  } catch (e: any) {
+    console.error(e);
+    return {
+      image: (
+        <div
+          style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}
+        >
+          <span>error:</span>
+          <span>{e.message}</span>
+        </div>
+      ),
+    };
+  }
 
   // Save claim history
-  await supabase.from("fwh_claims").insert({
+  const save = await supabase.from("fwh_claims").insert({
     fid: message?.requesterFid,
-    f_address: userAddress,
+    f_address: message?.requesterCustodyAddress,
     eth_address: userAddress,
-    claimed_at: new Date().toISOString(),
-  });
+  })
 
   return {
-    image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
+    image:
+      "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
-      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
+      <Button
+        action="link"
+        target={`https://basescan.org/tx/${receipt}`}
+      >
         See on Base Scan
       </Button>,
     ],
-  };
-});
+  }
+})
 
-export const GET = handleRequest;
-export const POST = handleRequest;
+export const GET = handleRequest
+export const POST = handleRequest
