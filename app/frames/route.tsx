@@ -25,8 +25,7 @@ const div_style: CSSProperties = {
 };
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message as any; // Ensure message is treated as an object
-
+  const message = ctx.message as any;
   if (!message)
     return {
       image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
@@ -37,7 +36,6 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  // Ensure `requesterVerifiedAddresses` exists and is an array before accessing it
   if (!message?.requesterVerifiedAddresses?.length) {
     return {
       image: (
@@ -54,15 +52,16 @@ const handleRequest = frames(async (ctx) => {
   }
 
   // Find user last claim
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("fwh_claims")
-    .select("claimed_at")
+    .select("claimed_at", { count: "exact" })
     .eq("fid", message?.requesterFid)
     .order("claimed_at", { ascending: false })
     .limit(1);
-  
+
   const lastInteractionTime = checkInteractionTime(data);
 
+  // If find claims or has not passed 24 hours since last claim
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     const buttonText = `Try again in ${lastInteractionTime.formattedTime}`;
     return {
@@ -77,7 +76,7 @@ const handleRequest = frames(async (ctx) => {
 
   const userAddress = message?.requesterVerifiedAddresses?.[0] as `0x${string}`;
 
-  // Send transaction
+  // send transaction
   let receipt = "";
   try {
     const { request } = await publicClient.simulateContract({
@@ -89,7 +88,6 @@ const handleRequest = frames(async (ctx) => {
     });
     receipt = await walletClient.writeContract(request);
   } catch (e: any) {
-    console.error(e);
     return {
       image: (
         <div
@@ -103,25 +101,22 @@ const handleRequest = frames(async (ctx) => {
   }
 
   // Save claim history
-  const save = await supabase.from("fwh_claims").insert({
+  await supabase.from("fwh_claims").insert({
     fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress,
+    f_address: message?.requesterCustodyAddress || "N/A",
     eth_address: userAddress,
-  })
+  });
 
   return {
     image:
       "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
-      <Button
-        action="link"
-        target={`https://basescan.org/tx/${receipt}`}
-      >
+      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
       </Button>,
     ],
-  }
-})
+  };
+});
 
-export const GET = handleRequest
-export const POST = handleRequest
+export const GET = handleRequest;
+export const POST = handleRequest;
