@@ -1,26 +1,15 @@
-import { ABI } from "@/lib/abi"
-import { FWH_CONTRACT } from "@/lib/constants"
-import { supabase } from "@/lib/supabase"
-import { checkInteractionTime } from "@/lib/utils"
-import { account, publicClient, walletClient } from "@/lib/web3-client"
-import { farcasterHubContext } from "frames.js/middleware"
-import { Button, createFrames } from "frames.js/next"
-import { CSSProperties } from "react"
-import { parseUnits } from "viem"
+import { ABI } from "@/lib/abi";
+import { FWH_CONTRACT } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
+import { checkInteractionTime } from "@/lib/utils";
+import { account, publicClient, walletClient } from "@/lib/web3-client";
+import { Button, createFrames } from "frames.js/next";
+import { CSSProperties } from "react";
+import { parseUnits } from "viem";
 
 const frames = createFrames({
   basePath: "/frames",
-  middleware: [
-    farcasterHubContext({
-      // remove if you aren't using @frames.js/debugger or you just don't want to use the debugger hub
-      ...(process.env.NODE_ENV === "production"
-        ? {}
-        : {
-            hubHttpUrl: "http://localhost:3010/hub",
-          }),
-    }),
-  ],
-})
+});
 
 const div_style: CSSProperties = {
   display: "flex",
@@ -33,46 +22,22 @@ const div_style: CSSProperties = {
   color: "#00FF41",
   textShadow: "0 0 4px #00FF41,0 0 5px #00FF41,0 0 5px #00FF41",
   filter: "blur(0.02rem)",
-}
+};
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message
+  const message = ctx.message;
 
-  // If no message, show home page
   if (!message)
     return {
-      image:
-        "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
+      image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claim.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim FWH
         </Button>,
       ],
-    }
+    };
 
-  let image = ""
-
-  if (!message.likedCast && !message.requesterFollowsCaster) {
-    image = "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/fox_follow_like.png?raw=true"
-  } else if (!message.likedCast) {
-    image = "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/fox_follow.png?raw=true"
-  } else {
-    image = "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/fox_like.png?raw=true"
-  }
-
-  // If user didn't complete the requirements, show to do list
-  if (!message.likedCast || !message.requesterFollowsCaster) {
-    return {
-      image: image,
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    }
-  }
-
-  if (!message.requesterVerifiedAddresses.length) {
+  if (!message.requesterVerifiedAddresses?.length) {
     return {
       image: (
         <div style={div_style}>
@@ -84,78 +49,60 @@ const handleRequest = frames(async (ctx) => {
           Try again
         </Button>,
       ],
-    }
+    };
   }
 
-  // Find user last claim
-  const { data, error } = await supabase
-    .from("fwh_claims")
-    .select("claimed_at", { count: "exact" })
-    .eq("fid", message?.requesterFid)
-    .order("claimed_at", { ascending: false })
-    .limit(1)
-  const lastInteractionTime = checkInteractionTime(data)
+  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`;
 
-  // If find claims or has not passed 24 hours since last claim
+  // Find user last claim
+  const { data } = await supabase
+    .from("fwh_claims")
+    .select("claimed_at")
+    .eq("eth_address", userAddress)
+    .order("claimed_at", { ascending: false })
+    .limit(1);
+
+  const lastInteractionTime = checkInteractionTime(data);
+
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
-    const buttonText = `Try again in ${lastInteractionTime.formattedTime}`
     return {
       image: "https://github.com/thesmithdao/fwhframe/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          {buttonText}
+          {`Try again in ${lastInteractionTime.formattedTime}`}
         </Button>,
       ],
-    }
+    };
   }
 
-  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
+  // Send transaction
+  const { request } = await publicClient.simulateContract({
+    account,
+    address: FWH_CONTRACT,
+    abi: ABI,
+    functionName: "transfer",
+    args: [userAddress, parseUnits("0.000333", 18)],
+  });
 
-  // send transaction
-  let receipt = ""
-  try {
-    const { request } = await publicClient.simulateContract({
-      account,
-      address: FWH_CONTRACT,
-      abi: ABI,
-      functionName: "transfer",
-      args: [userAddress, parseUnits("0.000333", 18)],
-    })
-    receipt = await walletClient.writeContract(request)
-  } catch (e: any) {
-    console.error(e)
-    return {
-      image: (
-        <div
-          style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}
-        >
-          <span>error:</span>
-          <span>{e.message}</span>
-        </div>
-      ),
-    }
-  }
+  const receipt = await walletClient.writeContract(request);
 
   // Save claim history
-  const save = await supabase.from("fwh_claims").insert({
+  await supabase.from("fwh_claims").insert({
     fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress,
+    f_address: userAddress,
     eth_address: userAddress,
-  })
+    claimed_at: new Date().toISOString(),
+  });
 
   return {
-    image:
-      "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
+    image: "https://github.com/thesmithdao/fwhframe/blob/main/public/claimed.png?raw=true",
     buttons: [
-      <Button
-        action="link"
-        target={`https://basescan.org/tx/${receipt}`}
-      >
+      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
       </Button>,
     ],
-  }
-})
+  };
+});
 
-export const GET = handleRequest
-export const POST = handleRequest
+export const GET = handleRequest;
+export const POST = handleRequest;
