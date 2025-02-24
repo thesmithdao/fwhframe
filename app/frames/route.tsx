@@ -25,7 +25,7 @@ const div_style: CSSProperties = {
 };
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message as any; // Bypass strict TypeScript checking
+  const message = ctx.message;
 
   if (!message)
     return {
@@ -37,7 +37,28 @@ const handleRequest = frames(async (ctx) => {
       ],
     };
 
-  if (!message?.requesterVerifiedAddresses?.length) {
+  let image = "";
+
+  if (!message.likedCast && !message.requesterFollowsCaster) {
+    image = "https://github.com/thesmithdao/fwhframe/blob/main/public/fox_follow_like.png?raw=true";
+  } else if (!message.likedCast) {
+    image = "https://github.com/thesmithdao/fwhframe/blob/main/public/fox_like.png?raw=true";
+  } else {
+    image = "https://github.com/thesmithdao/fwhframe/blob/main/public/fox_follow.png?raw=true";
+  }
+
+  if (!message.likedCast || !message.requesterFollowsCaster) {
+    return {
+      image: image,
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    };
+  }
+
+  if (!message.requesterVerifiedAddresses?.length) {
     return {
       image: (
         <div style={div_style}>
@@ -52,17 +73,18 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
+  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`;
+
   // Find user last claim
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("fwh_claims")
-    .select("claimed_at", { count: "exact" })
+    .select("claimed_at")
     .eq("fid", message?.requesterFid)
     .order("claimed_at", { ascending: false })
     .limit(1);
 
   const lastInteractionTime = checkInteractionTime(data);
 
-  // If find claims or has not passed 24 hours since last claim
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     const buttonText = `Try again in ${lastInteractionTime.formattedTime}`;
     return {
@@ -75,36 +97,19 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message?.requesterVerifiedAddresses?.[0] as `0x${string}`;
+  const { request } = await publicClient.simulateContract({
+    account,
+    address: FWH_CONTRACT,
+    abi: ABI,
+    functionName: "transfer",
+    args: [userAddress, parseUnits("0.000333", 18)],
+  });
 
-  // send transaction
-  let receipt = "";
-  try {
-    const { request } = await publicClient.simulateContract({
-      account,
-      address: FWH_CONTRACT,
-      abi: ABI,
-      functionName: "transfer",
-      args: [userAddress, parseUnits("0.000333", 18)],
-    });
-    receipt = await walletClient.writeContract(request);
-  } catch (e: any) {
-    return {
-      image: (
-        <div
-          style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}
-        >
-          <span>error:</span>
-          <span>{e.message}</span>
-        </div>
-      ),
-    };
-  }
+  const receipt = await walletClient.writeContract(request);
 
-  // Save claim history
   await supabase.from("fwh_claims").insert({
     fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress || "N/A",
+    f_address: message?.requesterCustodyAddress,
     eth_address: userAddress,
   });
 
