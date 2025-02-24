@@ -25,7 +25,7 @@ const div_style: CSSProperties = {
 };
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message;
+  const message = ctx.message as any; // Ensure it recognizes properties
 
   if (!message)
     return {
@@ -39,15 +39,15 @@ const handleRequest = frames(async (ctx) => {
 
   let image = "";
 
-  if (!message.likedCast && !message.requesterFollowsCaster) {
+  if (!message?.likedCast && !message?.requesterFollowsCaster) {
     image = "https://github.com/thesmithdao/fwhframe/blob/main/public/fox_follow_like.png?raw=true";
-  } else if (!message.likedCast) {
+  } else if (!message?.likedCast) {
     image = "https://github.com/thesmithdao/fwhframe/blob/main/public/fox_like.png?raw=true";
   } else {
     image = "https://github.com/thesmithdao/fwhframe/blob/main/public/fox_follow.png?raw=true";
   }
 
-  if (!message.likedCast || !message.requesterFollowsCaster) {
+  if (!message?.likedCast || !message?.requesterFollowsCaster) {
     return {
       image: image,
       buttons: [
@@ -58,7 +58,7 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  if (!message.requesterVerifiedAddresses?.length) {
+  if (!message?.requesterVerifiedAddresses?.length) {
     return {
       image: (
         <div style={div_style}>
@@ -73,7 +73,7 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`;
+  const userAddress = message?.requesterVerifiedAddresses?.[0] as `0x${string}`;
 
   // Find user last claim
   const { data } = await supabase
@@ -109,7 +109,7 @@ const handleRequest = frames(async (ctx) => {
 
   await supabase.from("fwh_claims").insert({
     fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress,
+    f_address: message?.requesterCustodyAddress || userAddress, // Ensure it's not null
     eth_address: userAddress,
   });
 
