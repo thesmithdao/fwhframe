@@ -36,25 +36,8 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  let requestBody
-  try {
-    requestBody = await ctx.request.json()
-  } catch (err) {
-    return {
-      image: (
-        <div style={div_style}>
-          Error: Unable to parse request body.
-        </div>
-      ),
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    }
-  }
-
-  const message = requestBody?.message
+  // Use `ctx.input` to get the message from Farcaster
+  const message = ctx.input?.message
 
   if (!message) {
     return {
