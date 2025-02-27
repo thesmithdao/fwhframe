@@ -25,16 +25,47 @@ const div_style: CSSProperties = {
 }
 
 const handleRequest = frames(async (ctx) => {
-  // Extract Farcaster message safely
-  const message = ctx.body?.message
-  console.log(ctx)
-
-  if (!message) {
+  if (ctx.request.method === "GET") {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim Fox
+        </Button>,
+      ],
+    }
+  }
+
+  let requestBody
+  try {
+    requestBody = await ctx.request.json()
+  } catch (err) {
+    return {
+      image: (
+        <div style={div_style}>
+          Error: Unable to parse request body.
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    }
+  }
+
+  const message = requestBody?.message
+
+  if (!message) {
+    return {
+      image: (
+        <div style={div_style}>
+          Error: No message found in request.
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
         </Button>,
       ],
     }
