@@ -3,22 +3,12 @@ import { FOX_CONTRACT } from "@/lib/constants"
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
 import { account, publicClient, walletClient } from "@/lib/web3-client"
-import { farcasterHubContext } from "frames.js/middleware"
 import { Button, createFrames } from "frames.js/next"
 import { CSSProperties } from "react"
 import { parseUnits } from "viem"
 
 const frames = createFrames({
   basePath: "/frames",
-  middleware: [
-    farcasterHubContext({
-      ...(process.env.NODE_ENV === "production"
-        ? {}
-        : {
-            hubHttpUrl: "http://localhost:3010/hub",
-          }),
-    }),
-  ],
 })
 
 const div_style: CSSProperties = {
@@ -35,12 +25,12 @@ const div_style: CSSProperties = {
 }
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx?.message
+
+  const message = ctx?.req?.body?.message
 
   if (!message) {
     return {
-      image:
-        "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
           🦊 Claim Fox
@@ -48,8 +38,10 @@ const handleRequest = frames(async (ctx) => {
       ],
     }
   }
+
   
-  if (!Array.isArray(message.requesterVerifiedAddresses) || message.requesterVerifiedAddresses.length === 0) {
+  const verifiedAddresses = message.requesterVerifiedAddresses
+  if (!Array.isArray(verifiedAddresses) || verifiedAddresses.length === 0) {
     return {
       image: (
         <div style={div_style}>
@@ -63,8 +55,9 @@ const handleRequest = frames(async (ctx) => {
       ],
     }
   }
-  
-  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
+
+  // Retrieve and validate the claimer's address
+  const userAddress = verifiedAddresses[0] as `0x${string}`
   if (!userAddress) {
     return {
       image: (
