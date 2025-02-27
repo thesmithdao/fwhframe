@@ -37,7 +37,7 @@ const div_style: CSSProperties = {
 
 const handleRequest = frames(async (ctx) => {
   const message = ctx.message
-  console.log(ctx)
+  console.log(message)
 
   // If no message, show home page
   if (!message)
@@ -52,26 +52,6 @@ const handleRequest = frames(async (ctx) => {
     }
 
   let image = ""
-
-  if (!message.likedCast && !message.requesterFollowsCaster) {
-    image = "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/fox_follow_like.png?raw=true"
-  } else if (!message.likedCast) {
-    image = "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/fox_follow.png?raw=true"
-  } else {
-    image = "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/fox_like.png?raw=true"
-  }
-
-  // If user didn't complete the requirements, show to do list
-  if (!message.likedCast || !message.requesterFollowsCaster) {
-    return {
-      image: image,
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    }
-  }
 
   if (!message.requesterVerifiedAddresses.length) {
     return {
