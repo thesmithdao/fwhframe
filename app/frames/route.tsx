@@ -25,6 +25,9 @@ const div_style: CSSProperties = {
 }
 
 const handleRequest = frames(async (ctx) => {
+  // Log the full `ctx` object for debugging
+  console.log("CTX OBJECT RECEIVED:", JSON.stringify(ctx, null, 2))
+
   if (ctx.request.method === "GET") {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
@@ -36,10 +39,21 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Use `ctx.input` to get the message from Farcaster
-  const message = ctx.input?.message
+  // Manually parse JSON request body if available
+  let requestBody = {}
+  try {
+    requestBody = await ctx.request.json()
+  } catch (err) {
+    console.error("Error parsing request body:", err)
+  }
+
+  console.log("Parsed Request Body:", JSON.stringify(requestBody, null, 2))
+
+  // Try extracting the message from multiple possible sources
+  const message = ctx.input?.message || requestBody?.message || ctx?.body?.message
 
   if (!message) {
+    console.error("Error: No message found in request")
     return {
       image: (
         <div style={div_style}>
@@ -54,7 +68,10 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
+  console.log("Extracted Message:", JSON.stringify(message, null, 2))
+
   if (!Array.isArray(message.requesterVerifiedAddresses) || message.requesterVerifiedAddresses.length === 0) {
+    console.error("Error: No verified addresses found in message")
     return {
       image: (
         <div style={div_style}>
@@ -72,6 +89,7 @@ const handleRequest = frames(async (ctx) => {
   // Retrieve and validate the claimer's address
   const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
   if (!userAddress) {
+    console.error("Error: Unable to retrieve a verified address")
     return {
       image: (
         <div style={div_style}>
@@ -86,6 +104,8 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
+  console.log("User Address Extracted:", userAddress)
+
   // Fetch last claim record
   const { data, error } = await supabase
     .from("fox_claims")
@@ -95,6 +115,7 @@ const handleRequest = frames(async (ctx) => {
     .limit(1)
 
   if (error) {
+    console.error("Error fetching claim history:", error)
     return {
       image: (
         <div style={div_style}>
@@ -109,10 +130,13 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
+  console.log("Last Claim Data:", JSON.stringify(data, null, 2))
+
   const lastInteractionTime = checkInteractionTime(data)
 
   // If claim cooldown period is active
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
+    console.log("Cooldown Active:", lastInteractionTime.formattedTime)
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
@@ -134,7 +158,9 @@ const handleRequest = frames(async (ctx) => {
       args: [userAddress, parseUnits("0.000333", 18)],
     })
     receipt = await walletClient.writeContract(request)
+    console.log("Transaction Receipt:", receipt)
   } catch (e: any) {
+    console.error("Transaction Error:", e)
     return {
       image: (
         <div style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}>
@@ -156,6 +182,7 @@ const handleRequest = frames(async (ctx) => {
   ])
 
   if (supabaseError) {
+    console.error("Error inserting into Supabase:", supabaseError)
     return {
       image: (
         <div style={div_style}>
@@ -169,6 +196,8 @@ const handleRequest = frames(async (ctx) => {
       ],
     }
   }
+
+  console.log("Claim successfully saved to Supabase")
 
   return {
     image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
