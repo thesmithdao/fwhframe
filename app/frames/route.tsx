@@ -25,7 +25,10 @@ const div_style: CSSProperties = {
 }
 
 const handleRequest = frames(async (ctx) => {
-  if (!ctx.req.body || !ctx.req.body.message) {
+  // Extract Farcaster message safely
+  const message = ctx.body?.message
+
+  if (!message) {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
@@ -35,8 +38,6 @@ const handleRequest = frames(async (ctx) => {
       ],
     }
   }
-
-  const message = ctx.req.body.message
 
   if (!Array.isArray(message.requesterVerifiedAddresses) || message.requesterVerifiedAddresses.length === 0) {
     return {
@@ -53,7 +54,7 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Get the user's wallet address from Farcaster
+  // Retrieve and validate the claimer's address
   const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
   if (!userAddress) {
     return {
