@@ -27,6 +27,7 @@ const div_style: CSSProperties = {
 const handleRequest = frames(async (ctx) => {
   // Extract Farcaster message safely
   const message = ctx.body?.message
+  console.log(ctx)
 
   if (!message) {
     return {
