@@ -37,15 +37,12 @@ const getVerifiedAddress = async (fid: number) => {
     })
     const data = await response.json()
     return data?.result?.verifications?.[0] || null
-  } catch (error) {
-    console.error("Error fetching Farcaster address:", error)
+  } catch {
     return null
   }
 }
 
 const handleRequest = frames(async (ctx) => {
-  console.log("CTX OBJECT RECEIVED:", JSON.stringify(ctx, null, 2))
-
   if (ctx.request.method === "GET") {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
@@ -59,7 +56,6 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Extract FID from Farcaster request
   const fid = ctx.message?.requesterFid
   if (!fid) {
     return {
@@ -74,9 +70,6 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  console.log("Extracted FID:", fid)
-
-  // Fetch the verified Ethereum address from Warpcast API
   const userAddress = await getVerifiedAddress(fid)
   if (!userAddress) {
     return {
@@ -91,37 +84,16 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  console.log("User Address Extracted:", userAddress)
-
-  // Fetch last claim record
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("fox_claims")
     .select("claimed_at", { count: "exact" })
     .eq("fid", fid)
     .order("claimed_at", { ascending: false })
     .limit(1)
 
-  if (error) {
-    console.error("Error fetching claim history:", error)
-    return {
-      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
-      buttons: [
-        {
-          action: "post",
-          target: "/frames?state=true",
-          label: "Try again",
-        } as const,
-      ],
-    }
-  }
-
-  console.log("Last Claim Data:", JSON.stringify(data, null, 2))
-
   const lastInteractionTime = checkInteractionTime(data)
 
-  // If claim cooldown period is active
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
-    console.log("Cooldown Active:", lastInteractionTime.formattedTime)
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
@@ -134,7 +106,6 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Send transaction
   let receipt = ""
   try {
     const { request } = await publicClient.simulateContract({
@@ -145,9 +116,7 @@ const handleRequest = frames(async (ctx) => {
       args: [userAddress, parseUnits("0.000333", 18)],
     })
     receipt = await walletClient.writeContract(request)
-    console.log("Transaction Receipt:", receipt)
-  } catch (e: any) {
-    console.error("Transaction Error:", e)
+  } catch {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/tx_error.png?raw=true",
       buttons: [
@@ -160,30 +129,13 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Insert claim into Supabase
-  const { error: supabaseError } = await supabase.from("fox_claims").insert([
+  await supabase.from("fox_claims").insert([
     {
       fid: fid,
       eth_address: userAddress,
       claimed_at: new Date().toISOString(),
     }
   ])
-
-  if (supabaseError) {
-    console.error("Error inserting into Supabase:", supabaseError)
-    return {
-      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
-      buttons: [
-        {
-          action: "post",
-          target: "/frames?state=true",
-          label: "Try again",
-        } as const,
-      ],
-    }
-  }
-
-  console.log("Claim successfully saved to Supabase")
 
   return {
     image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
