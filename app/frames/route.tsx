@@ -37,17 +37,18 @@ const div_style: CSSProperties = {
 const handleRequest = frames(async (ctx) => {
   const message = ctx?.message
 
-  if (!message)
+  if (!message) {
     return {
       image:
         "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          🦊 Claim FWH
+          🦊 Claim Fox
         </Button>,
       ],
     }
-
+  }
+  
   if (!Array.isArray(message.requesterVerifiedAddresses) || message.requesterVerifiedAddresses.length === 0) {
     return {
       image: (
@@ -62,8 +63,7 @@ const handleRequest = frames(async (ctx) => {
       ],
     }
   }
-
-  // Get user address
+  
   const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
   if (!userAddress) {
     return {
@@ -80,7 +80,7 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Find user last claim
+  // Fetch last claim
   const { data, error } = await supabase
     .from("fox_claims")
     .select("claimed_at", { count: "exact" })
@@ -96,7 +96,7 @@ const handleRequest = frames(async (ctx) => {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          Try again in {lastInteractionTime.formattedTime}
+          {`Try again in ${lastInteractionTime.formattedTime}`}
         </Button>,
       ],
     }
@@ -124,10 +124,10 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Save claim history
+  // Save claim history with correct address
   await supabase.from("fox_claims").insert({
     fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress,
+    f_address: message?.requesterCustodyAddress || null,
     eth_address: userAddress,
   })
 
@@ -135,10 +135,7 @@ const handleRequest = frames(async (ctx) => {
     image:
       "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
     buttons: [
-      <Button
-        action="link"
-        target={`https://basescan.org/tx/${receipt}`}
-      >
+      <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
       </Button>,
     ],
