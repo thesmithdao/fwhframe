@@ -12,7 +12,6 @@ const frames = createFrames({
   basePath: "/frames",
   middleware: [
     farcasterHubContext({
-      // remove if you aren't using @frames.js/debugger or you just don't want to use the debugger hub
       ...(process.env.NODE_ENV === "production"
         ? {}
         : {
@@ -36,28 +35,41 @@ const div_style: CSSProperties = {
 }
 
 const handleRequest = frames(async (ctx) => {
-  const message = ctx.message
-  console.log(message)
+  const message = ctx?.message
 
-  // If no message, show home page
   if (!message)
     return {
       image:
         "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          🦊 Claim Fox
+          🦊 Claim FWH
         </Button>,
       ],
     }
 
-  let image = ""
-
-  if (!message.requesterVerifiedAddresses.length) {
+  if (!Array.isArray(message.requesterVerifiedAddresses) || message.requesterVerifiedAddresses.length === 0) {
     return {
       image: (
         <div style={div_style}>
           You don't have a Verified Address added to Farcaster
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    }
+  }
+
+  // Get user address
+  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
+  if (!userAddress) {
+    return {
+      image: (
+        <div style={div_style}>
+          Error: Unable to retrieve a verified address.
         </div>
       ),
       buttons: [
@@ -75,24 +87,22 @@ const handleRequest = frames(async (ctx) => {
     .eq("fid", message?.requesterFid)
     .order("claimed_at", { ascending: false })
     .limit(1)
+
   const lastInteractionTime = checkInteractionTime(data)
 
-  // If find claims or has not passed 24 hours since last claim
+  // If not passed 24 hours since last claim
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
-    const buttonText = `Try again in ${lastInteractionTime.formattedTime}`
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
       buttons: [
         <Button action="post" target={{ query: { state: true } }}>
-          {buttonText}
+          Try again in {lastInteractionTime.formattedTime}
         </Button>,
       ],
     }
   }
 
-  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
-
-  // send transaction
+  // Send transaction
   let receipt = ""
   try {
     const { request } = await publicClient.simulateContract({
@@ -104,12 +114,9 @@ const handleRequest = frames(async (ctx) => {
     })
     receipt = await walletClient.writeContract(request)
   } catch (e: any) {
-    console.error(e)
     return {
       image: (
-        <div
-          style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}
-        >
+        <div style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}>
           <span>error:</span>
           <span>{e.message}</span>
         </div>
@@ -118,7 +125,7 @@ const handleRequest = frames(async (ctx) => {
   }
 
   // Save claim history
-  const save = await supabase.from("fox_claims").insert({
+  await supabase.from("fox_claims").insert({
     fid: message?.requesterFid,
     f_address: message?.requesterCustodyAddress,
     eth_address: userAddress,
