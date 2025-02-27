@@ -3,11 +3,11 @@ import { FOX_CONTRACT } from "@/lib/constants"
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
 import { account, publicClient, walletClient } from "@/lib/web3-client"
-import { Button, createFrames } from "frames.js/next"
+import { createFrames } from "frames.js/next"
 import { CSSProperties } from "react"
 import { parseUnits } from "viem"
 
-const WARPCAST_API_KEY = process.env.WARPCAST_API_KEY
+const WARPCAST_API_KEY = process.env.WARPCAST_API_KEY // Set this in your Vercel environment variables
 
 const frames = createFrames({
   basePath: "/frames",
@@ -26,6 +26,7 @@ const div_style: CSSProperties = {
   filter: "blur(0.02rem)",
 }
 
+// Fetch the user's verified Ethereum address from Warpcast API
 const getVerifiedAddress = async (fid: number) => {
   try {
     const response = await fetch(`https://api.warpcast.com/v2/verifications?fid=${fid}`, {
@@ -49,9 +50,11 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          🦊 Claim Fox
-        </Button>,
+        {
+          action: "post",
+          target: { query: { state: true } },
+          label: "🦊 Claim Fox",
+        },
       ],
     }
   }
@@ -60,11 +63,139 @@ const handleRequest = frames(async (ctx) => {
   const fid = ctx.message?.requesterFid
   if (!fid) {
     return {
-      image: (
-        <div style={div_style}>
-          Error: Missing Farcaster FID.
-        </div>
-      ),
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
       buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try a
+        {
+          action: "post",
+          target: { query: { state: true } },
+          label: "Try again",
+        },
+      ],
+    }
+  }
+
+  console.log("Extracted FID:", fid)
+
+  // Fetch the verified Ethereum address from Warpcast API
+  const userAddress = await getVerifiedAddress(fid)
+  if (!userAddress) {
+    return {
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/no_address.png?raw=true",
+      buttons: [
+        {
+          action: "post",
+          target: { query: { state: true } },
+          label: "Try again",
+        },
+      ],
+    }
+  }
+
+  console.log("User Address Extracted:", userAddress)
+
+  // Fetch last claim record
+  const { data, error } = await supabase
+    .from("fox_claims")
+    .select("claimed_at", { count: "exact" })
+    .eq("fid", fid)
+    .order("claimed_at", { ascending: false })
+    .limit(1)
+
+  if (error) {
+    console.error("Error fetching claim history:", error)
+    return {
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
+      buttons: [
+        {
+          action: "post",
+          target: { query: { state: true } },
+          label: "Try again",
+        },
+      ],
+    }
+  }
+
+  console.log("Last Claim Data:", JSON.stringify(data, null, 2))
+
+  const lastInteractionTime = checkInteractionTime(data)
+
+  // If claim cooldown period is active
+  if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
+    console.log("Cooldown Active:", lastInteractionTime.formattedTime)
+    return {
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
+      buttons: [
+        {
+          action: "post",
+          target: { query: { state: true } },
+          label: `Try again in ${lastInteractionTime.formattedTime}`,
+        },
+      ],
+    }
+  }
+
+  // Send transaction
+  let receipt = ""
+  try {
+    const { request } = await publicClient.simulateContract({
+      account,
+      address: FOX_CONTRACT,
+      abi: ABI,
+      functionName: "transfer",
+      args: [userAddress, parseUnits("0.000333", 18)],
+    })
+    receipt = await walletClient.writeContract(request)
+    console.log("Transaction Receipt:", receipt)
+  } catch (e: any) {
+    console.error("Transaction Error:", e)
+    return {
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/tx_error.png?raw=true",
+      buttons: [
+        {
+          action: "post",
+          target: { query: { state: true } },
+          label: "Try again",
+        },
+      ],
+    }
+  }
+
+  // Insert claim into Supabase
+  const { error: supabaseError } = await supabase.from("fox_claims").insert([
+    {
+      fid: fid,
+      eth_address: userAddress,
+      claimed_at: new Date().toISOString(),
+    }
+  ])
+
+  if (supabaseError) {
+    console.error("Error inserting into Supabase:", supabaseError)
+    return {
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
+      buttons: [
+        {
+          action: "post",
+          target: { query: { state: true } },
+          label: "Try again",
+        },
+      ],
+    }
+  }
+
+  console.log("Claim successfully saved to Supabase")
+
+  return {
+    image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
+    buttons: [
+      {
+        action: "link",
+        target: `https://basescan.org/tx/${receipt}`,
+        label: "See on Base Scan",
+      },
+    ],
+  }
+})
+
+export const GET = handleRequest
+export const POST = handleRequest
