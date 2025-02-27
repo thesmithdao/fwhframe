@@ -25,10 +25,7 @@ const div_style: CSSProperties = {
 }
 
 const handleRequest = frames(async (ctx) => {
-
-  const message = ctx?.req?.body?.message
-
-  if (!message) {
+  if (!ctx.req.body || !ctx.req.body.message) {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
@@ -39,9 +36,9 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  
-  const verifiedAddresses = message.requesterVerifiedAddresses
-  if (!Array.isArray(verifiedAddresses) || verifiedAddresses.length === 0) {
+  const message = ctx.req.body.message
+
+  if (!Array.isArray(message.requesterVerifiedAddresses) || message.requesterVerifiedAddresses.length === 0) {
     return {
       image: (
         <div style={div_style}>
@@ -56,8 +53,8 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Retrieve and validate the claimer's address
-  const userAddress = verifiedAddresses[0] as `0x${string}`
+  // Get the user's wallet address from Farcaster
+  const userAddress = message.requesterVerifiedAddresses[0] as `0x${string}`
   if (!userAddress) {
     return {
       image: (
@@ -73,7 +70,7 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Fetch last claim
+  // Fetch last claim record
   const { data, error } = await supabase
     .from("fox_claims")
     .select("claimed_at", { count: "exact" })
@@ -81,9 +78,24 @@ const handleRequest = frames(async (ctx) => {
     .order("claimed_at", { ascending: false })
     .limit(1)
 
+  if (error) {
+    return {
+      image: (
+        <div style={div_style}>
+          Error fetching claim history.
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    }
+  }
+
   const lastInteractionTime = checkInteractionTime(data)
 
-  // If not passed 24 hours since last claim
+  // If claim cooldown period is active
   if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
@@ -110,23 +122,40 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: (
         <div style={{ ...div_style, textAlign: "center", padding: "0px 120px" }}>
-          <span>error:</span>
+          <span>Transaction error:</span>
           <span>{e.message}</span>
         </div>
       ),
     }
   }
 
-  // Save claim history with correct address
-  await supabase.from("fox_claims").insert({
-    fid: message?.requesterFid,
-    f_address: message?.requesterCustodyAddress || null,
-    eth_address: userAddress,
-  })
+  // Insert claim into Supabase
+  const { error: supabaseError } = await supabase.from("fox_claims").insert([
+    {
+      fid: message?.requesterFid,
+      f_address: message?.requesterCustodyAddress || null,
+      eth_address: userAddress,
+      claimed_at: new Date().toISOString(),
+    }
+  ])
+
+  if (supabaseError) {
+    return {
+      image: (
+        <div style={div_style}>
+          Error saving claim to database.
+        </div>
+      ),
+      buttons: [
+        <Button action="post" target={{ query: { state: true } }}>
+          Try again
+        </Button>,
+      ],
+    }
+  }
 
   return {
-    image:
-      "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
+    image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
     buttons: [
       <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
         See on Base Scan
