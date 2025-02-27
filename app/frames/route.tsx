@@ -3,11 +3,11 @@ import { FOX_CONTRACT } from "@/lib/constants"
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
 import { account, publicClient, walletClient } from "@/lib/web3-client"
-import { createFrames, FrameButton } from "frames.js/next"
+import { createFrames } from "frames.js/next" 
 import { CSSProperties } from "react"
 import { parseUnits } from "viem"
 
-const WARPCAST_API_KEY = process.env.WARPCAST_API_KEY // Set this in your Vercel environment variables
+const WARPCAST_API_KEY = process.env.WARPCAST_API_KEY 
 
 const frames = createFrames({
   basePath: "/frames",
@@ -54,7 +54,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: "/frames?state=true",
           label: "🦊 Claim Fox",
-        } as const satisfies FrameButton,
+        } as const, 
       ],
     }
   }
@@ -69,7 +69,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: "/frames?state=true",
           label: "Try again",
-        } as const satisfies FrameButton,
+        } as const,
       ],
     }
   }
@@ -86,7 +86,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: "/frames?state=true",
           label: "Try again",
-        } as const satisfies FrameButton,
+        } as const,
       ],
     }
   }
@@ -110,7 +110,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: "/frames?state=true",
           label: "Try again",
-        } as const satisfies FrameButton,
+        } as const,
       ],
     }
   }
@@ -129,7 +129,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: "/frames?state=true",
           label: `Try again in ${lastInteractionTime.formattedTime}`,
-        } as const satisfies FrameButton,
+        } as const,
       ],
     }
   }
@@ -155,7 +155,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: "/frames?state=true",
           label: "Try again",
-        } as const satisfies FrameButton,
+        } as const,
       ],
     }
   }
@@ -178,7 +178,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: "/frames?state=true",
           label: "Try again",
-        } as const satisfies FrameButton,
+        } as const,
       ],
     }
   }
@@ -192,7 +192,7 @@ const handleRequest = frames(async (ctx) => {
         action: "link",
         target: `https://basescan.org/tx/${receipt}`,
         label: "See on Base Scan",
-      } as const satisfies FrameButton,
+      } as const,
     ],
   }
 })
