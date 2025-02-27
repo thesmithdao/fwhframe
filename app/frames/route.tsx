@@ -52,7 +52,7 @@ const handleRequest = frames(async (ctx) => {
           target: "/frames?state=true",
           label: "🦊 Claim Fox",
         } as const, 
-      ],
+      ] as const, // ✅ Ensures the correct type
     }
   }
 
@@ -66,7 +66,7 @@ const handleRequest = frames(async (ctx) => {
           target: "/frames?state=true",
           label: "Try again",
         } as const,
-      ],
+      ] as const,
     }
   }
 
@@ -80,7 +80,7 @@ const handleRequest = frames(async (ctx) => {
           target: "/frames?state=true",
           label: "Try again",
         } as const,
-      ],
+      ] as const,
     }
   }
 
@@ -102,7 +102,7 @@ const handleRequest = frames(async (ctx) => {
           target: "/frames?state=true",
           label: `Try again in ${lastInteractionTime.formattedTime}`,
         } as const,
-      ],
+      ] as const,
     }
   }
 
@@ -125,7 +125,7 @@ const handleRequest = frames(async (ctx) => {
           target: "/frames?state=true",
           label: "Try again",
         } as const,
-      ],
+      ] as const,
     }
   }
 
@@ -145,7 +145,7 @@ const handleRequest = frames(async (ctx) => {
         target: `https://basescan.org/tx/${receipt}`,
         label: "See on Base Scan",
       } as const,
-    ],
+    ] as const,
   }
 })
 
