@@ -24,8 +24,18 @@ const div_style: CSSProperties = {
   filter: "blur(0.02rem)",
 }
 
+// Define types to avoid TypeScript errors
+type FarcasterMessage = {
+  requesterFid?: number
+  requesterVerifiedAddresses?: string[]
+  requesterCustodyAddress?: string
+}
+
+type RequestBody = {
+  message?: FarcasterMessage
+}
+
 const handleRequest = frames(async (ctx) => {
-  // Log the full `ctx` object for debugging
   console.log("CTX OBJECT RECEIVED:", JSON.stringify(ctx, null, 2))
 
   if (ctx.request.method === "GET") {
@@ -39,18 +49,21 @@ const handleRequest = frames(async (ctx) => {
     }
   }
 
-  // Manually parse JSON request body if available
-  let requestBody = {}
+  // Manually parse JSON request body
+  let requestBody: RequestBody = {}
   try {
-    requestBody = await ctx.request.json()
+    requestBody = (await ctx.request.json()) as RequestBody
   } catch (err) {
     console.error("Error parsing request body:", err)
   }
 
   console.log("Parsed Request Body:", JSON.stringify(requestBody, null, 2))
 
-  // Try extracting the message from multiple possible sources
-  const message = ctx.input?.message || requestBody?.message || ctx?.body?.message
+  // Extract `message` properly
+  const message: FarcasterMessage | undefined =
+    (ctx.input as RequestBody)?.message ||
+    requestBody?.message ||
+    (ctx.body as RequestBody)?.message
 
   if (!message) {
     console.error("Error: No message found in request")
