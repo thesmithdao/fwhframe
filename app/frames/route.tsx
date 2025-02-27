@@ -37,6 +37,7 @@ const div_style: CSSProperties = {
 
 const handleRequest = frames(async (ctx) => {
   const message = ctx.message
+  console.log(ctx)
 
   // If no message, show home page
   if (!message)
