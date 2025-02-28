@@ -24,7 +24,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
-        { action: "post", target: { query: { state: "true" } }, label: "🦊 Claim Fox" },
+        { action: "post", label: "🦊 Claim Fox" }, // Fixed structure
       ],
     };
   }
@@ -34,7 +34,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/no_address.png?raw=true",
       buttons: [
-        { action: "post", target: { query: { state: "true" } }, label: "Try again" },
+        { action: "post", label: "Try again" }, // Fixed structure
       ],
     };
   }
@@ -54,7 +54,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
         buttons: [
-          { action: "post", target: { query: { state: "true" } }, label: "Try again" },
+          { action: "post", label: "Try again" }, // Fixed structure
         ],
       };
     }
@@ -64,7 +64,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
         buttons: [
-          { action: "post", target: { query: { state: "true" } }, label: `Try again in ${lastInteractionTime.formattedTime}` },
+          { action: "post", label: `Try again in ${lastInteractionTime.formattedTime}` }, // Fixed structure
         ],
       };
     }
@@ -73,7 +73,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
       buttons: [
-        { action: "post", target: { query: { state: "true" } }, label: "Try again" },
+        { action: "post", label: "Try again" }, // Fixed structure
       ],
     };
   }
@@ -103,7 +103,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
       buttons: [
-        { action: "link", target: `https://basescan.org/tx/${receipt}`, label: "See on Base Scan" },
+        { action: "link", target: `https://basescan.org/tx/${receipt}`, label: "See on Base Scan" }, // Fixed structure
       ],
     };
   } catch (e) {
@@ -111,7 +111,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/tx_error.png?raw=true",
       buttons: [
-        { action: "post", target: { query: { state: "true" } }, label: "Try again" },
+        { action: "post", label: "Try again" }, // Fixed structure
       ],
     };
   }
