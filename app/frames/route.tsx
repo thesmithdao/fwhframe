@@ -3,8 +3,6 @@ import { FOX_CONTRACT } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { checkInteractionTime } from "@/lib/utils";
 import { account, publicClient, walletClient } from "@/lib/web3-client";
-import { FrameButton, FrameButtonLink } from "frames.js";
-import { farcasterHubContext } from "frames.js/middleware";
 import { createFrames } from "frames.js/next";
 import { parseUnits } from "viem";
 
@@ -17,111 +15,32 @@ if (!WARPCAST_API_KEY) {
 
 const frames = createFrames({
   basePath: "/frames",
-  middleware: [
-    farcasterHubContext({
-      ...(process.env.NODE_ENV === "production"
-        ? {
-            hubRequestOptions: {
-              headers: {
-                Authorization: `Bearer ${WARPCAST_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-            },
-          }
-        : {
-            hubHttpUrl: "http://localhost:3010/hub",
-          }),
-    }),
-  ],
 });
-
-// Fetch the user's verified Ethereum address from Farcaster API
-const getVerifiedAddress = async (fid: number): Promise<`0x${string}` | null> => {
-  if (!fid) {
-    console.error("[Warpcast API] Invalid FID provided");
-    return null;
-  }
-
-  try {
-    console.log(`[Warpcast API] Fetching verified address for FID: ${fid}`);
-    const response = await fetch(`https://api.warpcast.com/v2/verifications?fid=${fid}`, {
-      headers: {
-        Authorization: `Bearer ${WARPCAST_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`[Warpcast API] Error response: ${response.status} ${response.statusText}`);
-      return null;
-    }
-
-    const data = await response.json();
-    // Check if we have verification data
-    if (!data?.result?.verifications?.length) {
-      console.warn(`[Warpcast API] No verifications found for FID: ${fid}`);
-      return null;
-    }
-
-    // Find the first Ethereum address in verifications
-    for (const verification of data.result.verifications) {
-      // Make sure we're getting an address property
-      let address = verification.address || verification.addressVerification || verification;
-      
-      if (typeof address === "string") {
-        // Ensure address starts with 0x
-        if (!address.startsWith("0x")) {
-          address = `0x${address}`;
-        }
-
-        // Validate Ethereum address format
-        if (/^0x[a-fA-F0-9]{40}$/.test(address)) {
-          console.log(`[Warpcast API] Verified Ethereum address: ${address}`);
-          return address as `0x${string}`;
-        }
-      }
-    }
-
-    console.warn(`[Warpcast API] No valid Ethereum address found for FID: ${fid}`);
-    return null;
-  } catch (error) {
-    console.error("[Warpcast API] Error fetching verified address:", error);
-    return null;
-  }
-};
 
 const handleRequest = frames(async (ctx) => {
   console.log("[Frames.js] Incoming request:", JSON.stringify(ctx, null, 2));
 
-  // Default state if message is not present
   if (!ctx.message) {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
-        {
-          action: "post",
-          label: "🦊 Claim Fox",
-        },
+        { action: "post", target: { query: { state: "true" } }, label: "🦊 Claim Fox" },
       ],
     };
   }
 
-  const userAddress = await getVerifiedAddress(ctx.message.requesterFid);
+  const userAddress = ctx.message.requesterVerifiedAddresses[0] as `0x${string}`;
   if (!userAddress) {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/no_address.png?raw=true",
       buttons: [
-        {
-          action: "post",
-          label: "Try again",
-        },
+        { action: "post", target: { query: { state: "true" } }, label: "Try again" },
       ],
     };
   }
 
   console.log(`[Frames.js] Verified address for FID ${ctx.message.requesterFid}: ${userAddress}`);
 
-  // Check if user has already claimed within 24 hours
   try {
     const { data, error } = await supabase
       .from("fox_claims")
@@ -135,24 +54,17 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
         buttons: [
-          {
-            action: "post",
-            label: "Try again",
-          },
+          { action: "post", target: { query: { state: "true" } }, label: "Try again" },
         ],
       };
     }
 
     const lastInteractionTime = checkInteractionTime(data);
-
     if (lastInteractionTime && !lastInteractionTime.has24HoursPassed) {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
         buttons: [
-          {
-            action: "post",
-            label: `Try again in ${lastInteractionTime.formattedTime}`,
-          },
+          { action: "post", target: { query: { state: "true" } }, label: `Try again in ${lastInteractionTime.formattedTime}` },
         ],
       };
     }
@@ -161,10 +73,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
       buttons: [
-        {
-          action: "post",
-          label: "Try again",
-        },
+        { action: "post", target: { query: { state: "true" } }, label: "Try again" },
       ],
     };
   }
@@ -172,12 +81,6 @@ const handleRequest = frames(async (ctx) => {
   // Send FOX tokens
   let receipt = "";
   try {
-    // Check if web3 clients are properly initialized
-    if (!publicClient || !walletClient || !account) {
-      throw new Error("Web3 clients not properly initialized");
-    }
-
-    // Prepare and send transaction
     const { request } = await publicClient.simulateContract({
       account,
       address: FOX_CONTRACT,
@@ -185,34 +88,22 @@ const handleRequest = frames(async (ctx) => {
       functionName: "transfer",
       args: [userAddress, parseUnits("0.000333", 18)],
     });
-    
+
     receipt = await walletClient.writeContract(request);
     console.log(`[Blockchain] Transaction sent, receipt: ${receipt}`);
-    
-    // Save the claim to the database
-    const save = await supabase.from("fox_claims").insert({
+
+    await supabase.from("fox_claims").insert({
       fid: ctx.message.requesterFid,
       f_address: ctx.message.requesterCustodyAddress,
       eth_address: userAddress,
-      claimed_at: new Date().toISOString(), // Explicitly set timestamp
+      claimed_at: new Date().toISOString(),
       tx_hash: receipt,
     });
-
-    if (save.error) {
-      console.error("[Supabase] Error inserting claim:", save.error);
-      // Continue to show success to user even if DB save fails
-    } else {
-      console.log(`[Supabase] Claim successfully saved for FID ${ctx.message.requesterFid}`);
-    }
 
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
       buttons: [
-        {
-          action: "link",
-          target: `https://basescan.org/tx/${receipt}`,
-          label: "See on Base Scan",
-        },
+        { action: "link", target: `https://basescan.org/tx/${receipt}`, label: "See on Base Scan" },
       ],
     };
   } catch (e) {
@@ -220,10 +111,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/tx_error.png?raw=true",
       buttons: [
-        {
-          action: "post",
-          label: "Try again",
-        },
+        { action: "post", target: { query: { state: "true" } }, label: "Try again" },
       ],
     };
   }
