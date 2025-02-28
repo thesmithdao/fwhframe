@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
 import { account, publicClient, walletClient } from "@/lib/web3-client"
 import { farcasterHubContext } from "frames.js/middleware"
-import { createFrames, FrameButton } from "frames.js/next"
+import { createFrames } from "frames.js/next"
 import { parseUnits } from "viem"
 
 const WARPCAST_API_KEY = process.env.WARPCAST_API_KEY
@@ -76,7 +76,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: { query: { state: true } },
           label: "🦊 Claim Fox",
-        } satisfies FrameButton,
+        },
       ],
     }
   }
@@ -90,7 +90,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: { query: { state: true } },
           label: "Try again",
-        } satisfies FrameButton,
+        },
       ],
     }
   }
@@ -113,7 +113,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: { query: { state: true } },
           label: "Try again",
-        } satisfies FrameButton,
+        },
       ],
     }
   }
@@ -128,7 +128,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: { query: { state: true } },
           label: `Try again in ${lastInteractionTime.formattedTime}`,
-        } satisfies FrameButton,
+        },
       ],
     }
   }
@@ -153,7 +153,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: { query: { state: true } },
           label: "Try again",
-        } satisfies FrameButton,
+        },
       ],
     }
   }
@@ -173,7 +173,7 @@ const handleRequest = frames(async (ctx) => {
           action: "post",
           target: { query: { state: true } },
           label: "Try again",
-        } satisfies FrameButton,
+        },
       ],
     }
   }
@@ -187,7 +187,7 @@ const handleRequest = frames(async (ctx) => {
         action: "link",
         target: `https://basescan.org/tx/${receipt}`,
         label: "See on Base Scan",
-      } satisfies FrameButton,
+      },
     ],
   }
 })
