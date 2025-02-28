@@ -70,26 +70,24 @@ const getVerifiedAddress = async (fid: number): Promise<`0x${string}` | null> =>
 }
 
 const handleRequest = frames(async (ctx) => {
-  try {
-    console.log("[Frames.js] Incoming request:", JSON.stringify(ctx, null, 2))
+  console.log("[Frames.js] Incoming request:", JSON.stringify(ctx, null, 2))
 
-    if (ctx.request.method === "GET") {
-      return {
-        image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
-        buttons: [
-          { action: "post", target: "/frames?state=true", label: "🦊 Claim Fox" },
-        ],
-      }
+  if (ctx.request.method === "GET") {
+    return {
+      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
+      buttons: [
+        { action: "post", target: "/frames?state=true", label: "🦊 Claim Fox" },
+      ],
     }
+  }
 
+  try {
     const fid = ctx.message?.requesterFid
     if (!fid) {
       console.error("[Frames.js] Missing FID in request")
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
-        buttons: [
-          { action: "post", target: "/frames?state=true", label: "Try again" },
-        ],
+        buttons: [{ action: "post", target: "/frames?state=true", label: "Try again" }],
       }
     }
 
@@ -100,9 +98,7 @@ const handleRequest = frames(async (ctx) => {
       console.warn("[Warpcast API] User has no verified Ethereum address")
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/no_address.png?raw=true",
-        buttons: [
-          { action: "post", target: "/frames?state=true", label: "Try again" },
-        ],
+        buttons: [{ action: "post", target: "/frames?state=true", label: "Try again" }],
       }
     }
 
@@ -119,9 +115,7 @@ const handleRequest = frames(async (ctx) => {
       console.error("[Supabase] Error fetching claim history:", error)
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
-        buttons: [
-          { action: "post", target: "/frames?state=true", label: "Try again" },
-        ],
+        buttons: [{ action: "post", target: "/frames?state=true", label: "Try again" }],
       }
     }
 
@@ -148,7 +142,7 @@ const handleRequest = frames(async (ctx) => {
         address: FOX_CONTRACT,
         abi: ABI,
         functionName: "transfer",
-        args: [userAddress, parseUnits("0.000333", 18)],
+        args: [userAddress as `0x${string}`, parseUnits("0.000333", 18)],
       })
 
       receipt = await walletClient.writeContract(request)
@@ -157,9 +151,7 @@ const handleRequest = frames(async (ctx) => {
       console.error("[Blockchain] Transaction failed:", txError)
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/tx_error.png?raw=true",
-        buttons: [
-          { action: "post", target: "/frames?state=true", label: "Try again" },
-        ],
+        buttons: [{ action: "post", target: "/frames?state=true", label: "Try again" }],
       }
     }
 
@@ -175,9 +167,7 @@ const handleRequest = frames(async (ctx) => {
       console.error("[Supabase] Error inserting claim:", insertError)
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
-        buttons: [
-          { action: "post", target: "/frames?state=true", label: "Try again" },
-        ],
+        buttons: [{ action: "post", target: "/frames?state=true", label: "Try again" }],
       }
     }
 
@@ -191,6 +181,7 @@ const handleRequest = frames(async (ctx) => {
     }
   } catch (err) {
     console.error("[Frames.js] Unexpected server error:", err)
+    return { image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true", buttons: [{ action: "post", target: "/frames?state=true", label: "Try again" }] }
   }
 })
 
