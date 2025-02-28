@@ -27,7 +27,7 @@ const div_style: CSSProperties = {
 }
 
 // Fetch the user's verified Ethereum address from Warpcast API
-const getVerifiedAddress = async (fid: number): Promise<string | null> => {
+const getVerifiedAddress = async (fid: number): Promise<`0x${string}` | null> => {
   try {
     console.log(`[Warpcast API] Fetching verified address for FID: ${fid}`)
     const response = await fetch(`https://api.warpcast.com/v2/verifications?fid=${fid}`, {
@@ -46,20 +46,26 @@ const getVerifiedAddress = async (fid: number): Promise<string | null> => {
     console.log("[Warpcast API] Raw Response:", JSON.stringify(data, null, 2))
 
     // Ensure the API response structure matches expectations
-    const verification = data?.result?.verifications?.[0]
+    let verification = data?.result?.verifications?.[0] || ""
     
-    if (!verification || typeof verification !== "string") {
+    if (typeof verification !== "string") {
       console.warn(`[Warpcast API] No valid Ethereum address found for FID: ${fid}`)
       return null
     }
 
+    // Ensure the address has the `0x` prefix
+    if (!verification.startsWith("0x")) {
+      verification = `0x${verification}`
+    }
+
+    // Validate address format
     if (!/^0x[a-fA-F0-9]{40}$/.test(verification)) {
       console.error(`[Warpcast API] Invalid Ethereum address format: ${verification}`)
       return null
     }
 
     console.log(`[Warpcast API] Verified Ethereum address: ${verification}`)
-    return verification
+    return verification as `0x${string}`
   } catch (error) {
     console.error("[Warpcast API] Error fetching verified address:", error)
     return null
@@ -204,14 +210,6 @@ const handleRequest = frames(async (ctx) => {
     }
   } catch (err) {
     console.error("[Frames.js] Unexpected server error:", err)
-    return {
-      image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
-      buttons: [
-        <Button action="post" target={{ query: { state: true } }}>
-          Try again
-        </Button>,
-      ],
-    }
   }
 })
 
