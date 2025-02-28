@@ -8,7 +8,7 @@ import { farcasterHubContext } from "frames.js/middleware";
 import { createFrames } from "frames.js/next";
 import { parseUnits } from "viem";
 
-// Make sure this env variable is properly set in Vercel
+// Ensure the WARPCAST_API_KEY environment variable is set
 const WARPCAST_API_KEY = process.env.WARPCAST_API_KEY;
 
 if (!WARPCAST_API_KEY) {
@@ -21,7 +21,12 @@ const frames = createFrames({
     farcasterHubContext({
       ...(process.env.NODE_ENV === "production"
         ? {
-            hubApiKey: WARPCAST_API_KEY, // Add API key here for production
+            hubRequestOptions: {
+              headers: {
+                Authorization: `Bearer ${WARPCAST_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+            },
           }
         : {
             hubHttpUrl: "http://localhost:3010/hub",
