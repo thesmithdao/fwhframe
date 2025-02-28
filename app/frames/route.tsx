@@ -27,7 +27,7 @@ const div_style: CSSProperties = {
 }
 
 // Fetch the user's verified Ethereum address from Warpcast API
-const getVerifiedAddress = async (fid: number) => {
+const getVerifiedAddress = async (fid: number): Promise<string | null> => {
   try {
     console.log(`[Warpcast API] Fetching verified address for FID: ${fid}`)
     const response = await fetch(`https://api.warpcast.com/v2/verifications?fid=${fid}`, {
@@ -43,15 +43,23 @@ const getVerifiedAddress = async (fid: number) => {
     }
 
     const data = await response.json()
-    const address = data?.result?.verifications?.[0] || null
+    console.log("[Warpcast API] Raw Response:", JSON.stringify(data, null, 2))
 
-    if (!address) {
-      console.warn(`[Warpcast API] No verified address found for FID: ${fid}`)
-    } else {
-      console.log(`[Warpcast API] Verified address found: ${address}`)
+    // Ensure the API response structure matches expectations
+    const verification = data?.result?.verifications?.[0]
+    
+    if (!verification || typeof verification !== "string") {
+      console.warn(`[Warpcast API] No valid Ethereum address found for FID: ${fid}`)
+      return null
     }
 
-    return address
+    if (!/^0x[a-fA-F0-9]{40}$/.test(verification)) {
+      console.error(`[Warpcast API] Invalid Ethereum address format: ${verification}`)
+      return null
+    }
+
+    console.log(`[Warpcast API] Verified Ethereum address: ${verification}`)
+    return verification
   } catch (error) {
     console.error("[Warpcast API] Error fetching verified address:", error)
     return null
