@@ -3,7 +3,7 @@ import { FOX_CONTRACT } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { checkInteractionTime } from "@/lib/utils";
 import { account, publicClient, walletClient } from "@/lib/web3-client";
-import { FrameButton, FrameButtonAction } from "frames.js";
+import { FrameButton, FrameButtonLink } from "frames.js";
 import { farcasterHubContext } from "frames.js/middleware";
 import { createFrames } from "frames.js/next";
 import { parseUnits } from "viem";
@@ -94,9 +94,9 @@ const handleRequest = frames(async (ctx) => {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
       buttons: [
         {
-          action: "post" as FrameButtonAction,
+          action: "post",
           label: "🦊 Claim Fox",
-        } as FrameButton,
+        },
       ],
     };
   }
@@ -107,9 +107,9 @@ const handleRequest = frames(async (ctx) => {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/no_address.png?raw=true",
       buttons: [
         {
-          action: "post" as FrameButtonAction,
+          action: "post",
           label: "Try again",
-        } as FrameButton,
+        },
       ],
     };
   }
@@ -131,9 +131,9 @@ const handleRequest = frames(async (ctx) => {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
         buttons: [
           {
-            action: "post" as FrameButtonAction,
+            action: "post",
             label: "Try again",
-          } as FrameButton,
+          },
         ],
       };
     }
@@ -145,9 +145,9 @@ const handleRequest = frames(async (ctx) => {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
         buttons: [
           {
-            action: "post" as FrameButtonAction,
+            action: "post",
             label: `Try again in ${lastInteractionTime.formattedTime}`,
-          } as FrameButton,
+          },
         ],
       };
     }
@@ -157,9 +157,9 @@ const handleRequest = frames(async (ctx) => {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
       buttons: [
         {
-          action: "post" as FrameButtonAction,
+          action: "post",
           label: "Try again",
-        } as FrameButton,
+        },
       ],
     };
   }
@@ -204,10 +204,10 @@ const handleRequest = frames(async (ctx) => {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
       buttons: [
         {
-          action: "link" as FrameButtonAction,
+          action: "link",
           target: `https://basescan.org/tx/${receipt}`,
           label: "See on Base Scan",
-        } as FrameButton,
+        },
       ],
     };
   } catch (e) {
@@ -216,9 +216,9 @@ const handleRequest = frames(async (ctx) => {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/tx_error.png?raw=true",
       buttons: [
         {
-          action: "post" as FrameButtonAction,
+          action: "post",
           label: "Try again",
-        } as FrameButton,
+        },
       ],
     };
   }
