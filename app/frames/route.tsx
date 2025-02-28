@@ -3,7 +3,7 @@ import { FOX_CONTRACT } from "@/lib/constants"
 import { supabase } from "@/lib/supabase"
 import { checkInteractionTime } from "@/lib/utils"
 import { account, publicClient, walletClient } from "@/lib/web3-client"
-import { createFrames, Button } from "frames.js/next"
+import { createFrames } from "frames.js/next"
 import { CSSProperties } from "react"
 import { parseUnits } from "viem"
 
@@ -45,7 +45,6 @@ const getVerifiedAddress = async (fid: number): Promise<`0x${string}` | null> =>
     const data = await response.json()
     console.log("[Warpcast API] Raw Response:", JSON.stringify(data, null, 2))
 
-    // Ensure the API response structure matches expectations
     let verification = data?.result?.verifications?.[0] || ""
     
     if (typeof verification !== "string") {
@@ -53,12 +52,10 @@ const getVerifiedAddress = async (fid: number): Promise<`0x${string}` | null> =>
       return null
     }
 
-    // Ensure the address has the `0x` prefix
     if (!verification.startsWith("0x")) {
       verification = `0x${verification}`
     }
 
-    // Validate address format
     if (!/^0x[a-fA-F0-9]{40}$/.test(verification)) {
       console.error(`[Warpcast API] Invalid Ethereum address format: ${verification}`)
       return null
@@ -80,9 +77,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claim.gif?raw=true",
         buttons: [
-          <Button action="post" target={{ query: { state: true } }}>
-            🦊 Claim Fox
-          </Button>,
+          { action: "post", target: "/frames?state=true", label: "🦊 Claim Fox" },
         ],
       }
     }
@@ -93,9 +88,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
         buttons: [
-          <Button action="post" target={{ query: { state: true } }}>
-            Try again
-          </Button>,
+          { action: "post", target: "/frames?state=true", label: "Try again" },
         ],
       }
     }
@@ -108,9 +101,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/no_address.png?raw=true",
         buttons: [
-          <Button action="post" target={{ query: { state: true } }}>
-            Try again
-          </Button>,
+          { action: "post", target: "/frames?state=true", label: "Try again" },
         ],
       }
     }
@@ -129,9 +120,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
         buttons: [
-          <Button action="post" target={{ query: { state: true } }}>
-            Try again
-          </Button>,
+          { action: "post", target: "/frames?state=true", label: "Try again" },
         ],
       }
     }
@@ -145,9 +134,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/wait.png?raw=true",
         buttons: [
-          <Button action="post" target={{ query: { state: true } }}>
-            {`Try again in ${lastInteractionTime.formattedTime}`}
-          </Button>,
+          { action: "post", target: "/frames?state=true", label: `Try again in ${lastInteractionTime.formattedTime}` },
         ],
       }
     }
@@ -171,9 +158,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/tx_error.png?raw=true",
         buttons: [
-          <Button action="post" target={{ query: { state: true } }}>
-            Try again
-          </Button>,
+          { action: "post", target: "/frames?state=true", label: "Try again" },
         ],
       }
     }
@@ -191,9 +176,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/error.png?raw=true",
         buttons: [
-          <Button action="post" target={{ query: { state: true } }}>
-            Try again
-          </Button>,
+          { action: "post", target: "/frames?state=true", label: "Try again" },
         ],
       }
     }
@@ -203,9 +186,7 @@ const handleRequest = frames(async (ctx) => {
     return {
       image: "https://github.com/r4topunk/shapeshift-faucet-frame/blob/main/public/claimed.png?raw=true",
       buttons: [
-        <Button action="link" target={`https://basescan.org/tx/${receipt}`}>
-          See on Base Scan
-        </Button>,
+        { action: "link", target: `https://basescan.org/tx/${receipt}`, label: "See on Base Scan" },
       ],
     }
   } catch (err) {
